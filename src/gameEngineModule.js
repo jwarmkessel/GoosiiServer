@@ -48,6 +48,19 @@ var gameEngineModuleHandler = function(app) {
       });
     });
   });
+
+  
+  var selectWinner = function(participants) {
+    for (var key in result)
+    {
+       if(result.hasOwnProperty(key)) { 
+         console.log(result[key].userId + result[key].pushIdentifier);
+         
+         //Out of all the participants randomly select who the winner is and send a special notification to the winner.
+         //Add non-winners to an array that will end up being the batch of notifications that will be notified
+       }
+    }
+  }
   
   app.get('/determineContestWinner/:companyId', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
@@ -58,21 +71,16 @@ var gameEngineModuleHandler = function(app) {
       
       var companies = new mongodb.Collection(client, 'companies');
       
-      companies.findOne({_id: new ObjectID(req.params.userId)}, function(err, object) {
+      companies.findOne({_id: new ObjectID(req.params.companyId)}, function(err, object) {
         if (err) console.warn(err.message);
-        console.log(object);
-        var result = object.participants;
-        console.log("The array " + object.participants);
-        for (var key in result)
-        {
-          console.log("the key " + key);
-          console.log("the key " + result);
-           if (result.hasOwnProperty(key)) { 
-             console.log(result[key].userId + result[key].pushIdentifier);
-           }
-        }
         
-        res.send("determining winner");
+        if(object) {
+          selectWinner(object.participants);
+
+          res.send("determining winner");
+        } else {
+          res.send("No such company exists");
+        }
         db.close();
       });
     });
