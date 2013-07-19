@@ -169,85 +169,69 @@ var gameEngineModuleHandler = function(app) {
     });
   });
   
-  app.get('/enterContest/:post/:userId/:companyId', function(req, res) {
-    var utc_timestamp = getCurrentUtcTimestamp();
-    //Open the database
+  //Checking in is akin to entering the contest. Within this method we check whether the user is already included in this contest
+  app.get('/enterContest/:userId/:companyId', function(req, res) {
+    //var utc_timestamp = getCurrentUtcTimestamp();
 
+    //Open the database
     db.open(function (error, client) {
       if (error) {throw error;}    
 
-      var community = new mongodb.Collection(client, 'users');                      		
-
-      //TODO: If user is already in active sweepstakes at this company then return sweepstakes information.
-      community.findOne({ $and: [{ "user.sweepstakes.companyId" : req.params.companyId }, { "user.sweepstakes.isActive": "yes"}]}, function(err, object) {
-        if (err) { 
-          console.log("we have an error");
-        }
-
-        if (object) {
-            // we have a result
-            console.log("we have a result so do nothing " + object._id);  
-            res.send(0);  
-            db.close();  
-            return;    
+      var usersMongo = new mongodb.Collection(client, 'users');
+      var isCheckedIn = 0;
+      //find the single users object.
+      usersMongo.findOne({_id: new ObjectID(req.params.userId)}, function(err, userObject) {
+        if(err){ return false };
+        
+        //Returned object should be a JSON array. Iterate through and check whether the companyID already exists within this list.
+        if(userObject) {
+          console.log("object exists");
+          
+          //Quickly check how many contests the user is particpating in here.
+          var i = 0;
+          
+          //Itereate through the list of contests (userObject.contests) the user is a part of.
+          for (var key in userObject.contests)
+          {
+            //If the companyID is present within the users list of contests then we know the user has already checked into this event.
+            if(userObject.contests[key] == req.params.companyId) {
+              
+              //Set a flag to indicate that the user is already checked in.
+              isCheckedIn = 1;
+              db.close();  
+              res.send("Awesome, you're already checked in.");
+            }            
+            i++;
+          }
+          console.log("This object has " + i + " elements");
         } else {
-            // we don't
-            console.log("we don't"); 
-
-
-          var userSweepstakesObj = {
-                                     "companyId" : req.params.companyId,
-                                     "startDate": "",
-                                     "endDate": "",
-                                     "prize": "",
-                                     "isActive" : "yes",
-                                     "isWinner" : "",
-                                     "lastPostTimestamp" : utc_timestamp
-                                   };
-
-          community.update({_id: ObjectID(req.params.userId)}, {$push: { "user.sweepstakes": userSweepstakesObj} }, {safe:true}, function(err, result) {
-            if (err) console.warn(err.message);
-            if (err && err.message.indexOf('E11000 ') !== -1) {
-              // this _id was already inserted in the database
-              console.log("E11000 error");
-            }
-            console.log("sweepstakes added to user object");
-
-            var userPostObj = {
-                                 "companyId" : req.params.companyId,
-                                 "timestamp" : utc_timestamp,
-                                 "post" : req.params.post
-                               };
-
-            community.update({_id: ObjectID(req.params.userId)}, {$push: { "user.posts": userPostObj} }, {safe:true}, function(err, result) {
-              if (err) console.warn(err.message);
-              if (err && err.message.indexOf('E11000 ') !== -1) {
-                // this _id was already inserted in the database
-                console.log("E11000 error");
-              }
-
-              console.log("Post object added to user object");
-
-              var companySweepstakesObj = {
-                                            "playerId" : req.params.userId,
-                                            "timestamp" : utc_timestamp,
-                                            "post" : req.params.post
-                                          };  
-
-              var companies = new mongodb.Collection(client, 'companies');                                                 
-              companies.update({_id: ObjectID(req.params.companyId)}, {$push: { "company.sweepstakes": companySweepstakesObj}}, {safe:true}, function(err, result) {
-                if (err) console.warn(err.message);
-                if (err && err.message.indexOf('E11000 ') !== -1) {
-                  // this _id was already inserted in the database
-                  console.log("E11000 error");
+          console.log("enterContest() Something's wrong. There should be an object.");
+          db.close();
+          res.send();
+          //exit gracefully.          
+          return;
+        }
+        
+        //Once we've verified that the user is NOT in the contest we can update both company and user object in our database.
+        if(!isCheckedIn) {
+          var companiesMongo = new mongodb.Collection(client, 'companies'); 
+          
+          //This is what the participants object looks like.
+          addToParticipantsObj = {"userId" : req.params.userId, "pushIdentifier" : userObject.pushIdentifier};
+          
+          //Push this object into the array of participants.
+          companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$push: {"participants" : addToParticipantsObj}}, {safe:true}, function(err, result) {                        
+            if(!err) {
+              usersMongo.update({_id: new ObjectID(req.params.userId)}, {$push: {"contests" : req.params.companyId}}, {safe:true}, function(err, userObject) {
+                if(!err) {
+                 res.send("You are now participating"); 
                 }
-
-                //send the response to the client
-                res.send(1);
-                db.close()
+                
+                //Close the database.
+                db.close();
               });
-            });
-          });
+            }
+          });  
         }
       });
     });

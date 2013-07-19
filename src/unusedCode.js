@@ -141,6 +141,82 @@ var assert = require('assert');*/
 // });
 //
 
+// app.get('/enterContest/:userId/:companyId', function(req, res) {
+//     var utc_timestamp = getCurrentUtcTimestamp();
+//     //Open the database
+// 
+//     db.open(function (error, client) {
+//       if (error) {throw error;}    
+// 
+//       var usersDB = new mongodb.Collection(client, 'users');                         
+// 
+//       //TODO: If user is already in active sweepstakes at this company then return sweepstakes information.
+//       usersDB.findOne({ $and: [{ "user.sweepstakes.companyId" : req.params.companyId }, { "user.sweepstakes.isActive": "yes"}]}, function(err, object) {
+//         if (err) { 
+//           console.log("we have an error");
+//         }
+// 
+//         if (object) {
+//             // we have a result
+//             console.log("we have a result so do nothing " + object._id);  
+//             res.send(0);  
+//             db.close();  
+//             return;    
+//         } else {
+//             // we don't
+//             console.log("we don't"); 
+// 
+// 
+//           var contest = {
+//                                      "companyId" : req.params.companyId,
+//                                      "startDate": "",
+//                                      "endDate": "",
+//                                      "prize": "",
+//                                      "isActive" : "yes",
+//                                      "isWinner" : "",
+//                                      "lastPostTimestamp" : utc_timestamp
+//                                    };
+// 
+//           usersDB.update({_id: ObjectID(req.params.userId)}, {$push: { "user.sweepstakes": userSweepstakesObj} }, {safe:true}, function(err, result) {
+//             if (err) console.warn(err.message);
+//             if (err && err.message.indexOf('E11000 ') !== -1) {
+//               // this _id was already inserted in the database
+//               console.log("E11000 error");
+//             }
+//             console.log("sweepstakes added to user object");
+// 
+//             var userPostObj = {
+//                                  "companyId" : req.params.companyId,
+//                                  "timestamp" : utc_timestamp,
+//                                  "post" : req.params.post
+//                                };
+// 
+// 
+// 
+//             var companySweepstakesObj = {
+//                                           "playerId" : req.params.userId,
+//                                           "timestamp" : utc_timestamp,
+//                                           "post" : req.params.post
+//                                         };  
+// 
+//             var companiesDB = new mongodb.Collection(client, 'companies');                                                 
+//             companiesDB.update({_id: ObjectID(req.params.companyId)}, {$push: { "company.sweepstakes": companySweepstakesObj}}, {safe:true}, function(err, result) {
+//               if (err) console.warn(err.message);
+//               if (err && err.message.indexOf('E11000 ') !== -1) {
+//                 // this _id was already inserted in the database
+//                 console.log("E11000 error");
+//               }
+// 
+//               //send the response to the client
+//               res.send(1);
+//               db.close()
+//             });
+//           });
+//         }
+//       });
+//     });
+//   });
+
 /* Examples of MONGODB shell commands *************************************************************************************************/
 
 /*Remove a key/value from collection

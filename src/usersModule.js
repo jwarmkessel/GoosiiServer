@@ -16,30 +16,25 @@ var usersModuleHandler = function(app) {
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
   
-  app.get('/createUser/:userIdentifier', function(req, res) {
+  app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 
     var newUserObject =  {
-                           	"user" : {
-                           		"identifier" : req.params.userIdentifier,
-                              "pushIdentifier" : "",
-                           		"adIdentifier" : "",
-                           		"created" : utc_timestamp,
-                           		"lastlogin" : utc_timestamp,
-                           		"firstName" : "",
-                           		"lastName" : "",
-                           		"email" : "",   
-                           		"phoneNumber" : "",                         		                      		                         		
-                           		"birthday" : "",
-                           		"social" : {
-                           			"fbID" : ""
-                           		},
-                           		"sweepstakes" : [],
-                           		"checkins" : [],
-                           		"posts" : []
-                           	}
+                           	"identifier" : req.params.userIdentifier,
+                            "pushIdentifier" : req.params.pushIdentifier,
+                         		"adIdentifier" : "",
+                         		"created" : utc_timestamp,
+                         		"lastlogin" : utc_timestamp,
+                         		"firstName" : "",
+                         		"lastName" : "",
+                         		"email" : "",   
+                         		"phoneNumber" : "",                         		                      		                         		
+                         		"birthday" : "",
+                         		"contests" : [],
+                         		"posts" : []
                            };
+                           
 
     //insert the user document object into the collection
     db.open(function (error, client) {
@@ -57,7 +52,7 @@ var usersModuleHandler = function(app) {
     });
   });
 
-  app.get('/loginUser/:userId', function(req, res) {
+  app.get('/loginUser/:userId/:pushIdentifier', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
     db.open(function (error, client) {
@@ -81,9 +76,11 @@ var usersModuleHandler = function(app) {
           /*
           collection.update({_id: ObjectID(req.params.userId)}, {$set: {'user.lastlogin':utc_timestamp, 'user.lastName':''}}, {safe:true}, function(err, result) {
           */        
+          
+          userObject = {"lastlogin" : utc_timestamp, "pushIdentifier" : req.params.pushIdentifier };
 
           console.log("The last time I logged in was " + utc_timestamp);
-          collection.update({_id: ObjectID(req.params.userId)}, {$set: {'user.lastlogin':utc_timestamp, 'user.lastName':''}}, {safe:true}, function(err, result) {
+          collection.update({_id: ObjectID(req.params.userId)}, {$set: userObject}, {safe:true}, function(err, result) {
 
             if (err) console.warn(err.message);
             if (err && err.message.indexOf('E11000 ') !== -1) {
