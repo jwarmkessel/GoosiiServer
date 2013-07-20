@@ -52,6 +52,7 @@ var usersModuleHandler = function(app) {
     });
   });
 
+  //loginUser requires the additional pushIdentifier because these tokens may change. 
   app.get('/loginUser/:userId/:pushIdentifier', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
@@ -94,33 +95,61 @@ var usersModuleHandler = function(app) {
       });
     });
   });
-  
-  app.get('/addCheckin/:userId/:companyId', function(req, res) {
-    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
-    //Open the database
-    db.open(function (error, client) {
-      if (error) throw error;
+  app.get('/getUserContests/:userId', function(req, res) {
 
-      var userCheckinObj = {
-  		                  	"companyId" : req.params.companyId,
-                    			"timestamp" : utc_timestamp
-                    		}
-
-      var users = new mongodb.Collection(client, 'users');
-      users.update({_id: ObjectID(req.params.userId)}, {$push: { "user.checkins": userCheckinObj} }, {safe:true}, function(err, result) {
-        if (err) console.warn(err.message);
-        if (err && err.message.indexOf('E11000 ') !== -1) {
-          // this _id was already inserted in the database
-          console.log("E11000 error");
+    //The array of company id's to query in companies.
+    companyObjArray = new Array();
+    db.open(function (error, client) {    
+      var usersMongo = new mongodb.Collection(client, 'users');
+      var companiesMongo = new mongodb.Collection(client, 'companies');      
+      usersMongo.findOne({_id: new ObjectID(req.params.userId)}, function(err, userObj) {
+        if(!err && userObj) {
+          
+          //Get the array of companyId's and build the list of company objects to query for.
+          for(var key in userObj.contests) {            
+            var companyObjectId = new ObjectID(userObj.contests[key]);
+            companyObjArray.push(companyObjectId);
+          }
+          
+          companiesMongo.findOne({"_id": {$in : companyObjArray }}, function(err, companyObj) {
+            if(!err) {
+              //Now that I have the list of company objects I can pass it back and modify the order here 
+              db.close();              
+              res.send(JSON.stringify(companyObj)); 
+            }
+          });
         }
-
-        //send the response to the client
-        res.send(objects);
-        db.close()
-      });    
+      });
     });
   });
+//This addCheckin is no longer necessary.  
+  // app.get('/addCheckin/:userId/:companyId', function(req, res) {
+  //   var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
+  // 
+  //   //Open the database
+  //   db.open(function (error, client) {
+  //     if (error) throw error;
+  // 
+  //     var userCheckinObj = {
+  //                        "companyId" : req.params.companyId,
+  //                        "timestamp" : utc_timestamp
+  //                      }
+  // 
+  //     var users = new mongodb.Collection(client, 'users');
+  //     users.update({_id: ObjectID(req.params.userId)}, {$push: { "user.checkins": userCheckinObj} }, {safe:true}, function(err, result) {
+  //       if (err) console.warn(err.message);
+  //       if (err && err.message.indexOf('E11000 ') !== -1) {
+  //         // this _id was already inserted in the database
+  //         console.log("E11000 error");
+  //       }
+  // 
+  //       //send the response to the client
+  //       res.send(objects);
+  //       db.close()
+  //     });    
+  //   });
+  // });
   
 };
 
