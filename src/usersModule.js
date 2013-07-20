@@ -56,18 +56,17 @@ var usersModuleHandler = function(app) {
   //Also updates the lastlogin.
   app.get('/loginUser/:userId/:pushIdentifier', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
-
+    console.log("Logging in: " + req.params.userId + " with pushIdentifier " + req.params.pushIdentifier);
     db.open(function (error, client) {
       if (error) throw error;    
       //validate the id string.
       try {
         var checker = check(req.params.userId).len(24).isHexadecimal();   
-        console.log("The id is : " + checker);
       }catch (e) {
-        console.log(e.message); //Please enter a valid integer
-        res.send("There was a problem with the userID");
         db.close();
-
+        res.send("There was a problem with the userID");        
+        console.log(e.message);
+        
         return;
       }
       
@@ -79,8 +78,11 @@ var usersModuleHandler = function(app) {
       
       //Query and update the parameters for this userId.
       usersMongo.update({_id: new ObjectID(req.params.userId)}, {$set: userObject}, function(err, object) {
-        if(!err && object) {
-          res.send(object);
+        if(!err) {
+          if(object) {
+            console.log(JSON.stringify(object));
+          }
+          res.send();
         } else {
           console.warn(err.message);
         }
