@@ -23,7 +23,7 @@ var geoSpatialModuleHandler = function(app) {
       if (error) {console.log("Db open failed"); throw error};
       var company = new mongodb.Collection(client, 'companies');
       company.find().toArray(function(err, results) {
-        console.log(results);
+        console.log(JSON.stringify(results));
         res.send(results);        
         db.close();
       });

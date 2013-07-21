@@ -32,7 +32,7 @@ var companiesModuleHandler = function(app) {
   utilitiesModule.getCurrentUtcTimestamp();
   
   app.get('/createCompany/:companyInfo', function(req, res) {
-    var utc_timestamp = getCurrentUtcTimestamp();
+    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 
     var companyObject =   {
@@ -54,7 +54,7 @@ var companiesModuleHandler = function(app) {
     db.open(function (error, client) {
       if (error) {console.log("Db open failed"); throw error};
       var companies = new mongodb.Collection(client, 'companies');
-      console.log("Inserting new user right now");
+
       companies.insert(companyObject, {safe:true}, function(err, object) {
         console.log("The object " + object);
         if (err) console.warn(err.message);
@@ -68,6 +68,7 @@ var companiesModuleHandler = function(app) {
     });
   });
 
+  //Get a company object using the "_id".
   app.get('/getCompany/:companyId', function(req, res) {
     var utc_timestamp = getCurrentUtcTimestamp();
 

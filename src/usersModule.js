@@ -93,10 +93,12 @@ var usersModuleHandler = function(app) {
 
   //Query and return the company objects for all the events the user is participating in. 
   app.get('/getUserContests/:userId', function(req, res) {
-
+    console.log("getUserContests called by user " + req.params.userId);
     //The array of company id's to query in companies.
-    companyObjArray = new Array();
+    var companyObjArray = new Array();
+    var singleCompanyArray = new Array();
     
+    var numOfEvents = 0;
     db.open(function (error, client) {    
       var usersMongo = new mongodb.Collection(client, 'users');
       var companiesMongo = new mongodb.Collection(client, 'companies');      
@@ -104,17 +106,21 @@ var usersModuleHandler = function(app) {
         if(!err && userObj) {
           
           //Get the array of companyId's and build the list of company objects to query for.
-          for(var key in userObj.contests) {            
+          for(var key in userObj.contests) { 
+            console.log("companyId being added to query " + userObj.contests[key]);           
             var companyObjectId = new ObjectID(userObj.contests[key]);
             companyObjArray.push(companyObjectId);
+            console.log(JSON.stringify(companyObjArray));
+            numOfEvents++;
           }
           
           //Query the companies collection and return the list of company objects.
-          companiesMongo.findOne({"_id": {$in : companyObjArray }}, function(err, companyObj) {
+          companiesMongo.find({"_id": {$in : companyObjArray }}).toArray(function(err, companyObj) {
             if(!err) {
               //Now that I have the list of company objects I can pass it back and modify the order here 
+              console.log("Sending client these company objects " + JSON.stringify(companyObj));
+              res.send(companyObj);
               db.close();              
-              res.send(JSON.stringify(companyObj)); 
             }
           });
         }
