@@ -134,71 +134,35 @@ var gameEngineModuleHandler = function(app) {
     });
   };
   
-  // var selectWinner = function(participants, event) {
-  //   //TODO Algorithm for determining the winner out of all participants goes here.
-  //   
-  //   //Add the companyId as another field to the sweepstakes variable.
-  //   event.contest.companyId = event._id;    
-  //   
-  //  
-  // }
-  
-  function selectWinnerRecursive(count, participants, event) {
-    //Do your thang here.
-    
+  function selectWinnerRecursive(count, participants, event) {    
     event.contest.companyId = event._id.toString();    
-    console.log("handle mongodb updates " + participants[count-1].pushIdentifier);
-    console.log("The count " + count);
+    console.log("selectWinnerRecursive() using " + participants[count-1].pushIdentifier);
     
     db.open(function (error, client) {
-      //Iterate through the participants and set their fulfillment object...remember to set the winner too!
-
-
-
       var usersMongo = new mongodb.Collection(client, 'users');
 
-
-      console.log("BEFORE searching "+ participants[count-1].pushIdentifier);
-      /*
-      Delete if a previous expired company event exists
-      Add the active fulfillment
-      */
       usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, "pushIdentifier" : participants[count-1].pushIdentifier}, function(err, object) {
-        if(!err) {
-          console.log("Checking the object " + object);
-          console.log("Checking the string object " + JSON.stringify(object));
-          console.log("The type of object " + typeof object);
-          
-          if(typeof object == "undefined") {
-            console.log("Inside typeof if");
-          }
-          
+        if(!err) {          
           if(object == null) {
-            console.log("Inside THE NULL if");            
-          }
-          
-          if(object == null) {
-            console.log("AFTER searching "+ participants[count-1].pushIdentifier);
             usersMongo.update({"pushIdentifier" : participants[count-1].pushIdentifier}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-              console.log("\n\nLet's do a push here. " + JSON.stringify(object));                  
+              console.log("fulFillment object added " + JSON.stringify(object));                  
             });
-          } 
-          // else {
-          //                 usersMongo.update({"pushIdentifier" : participants[key].pushIdentifier}, {$set : "fulfillments" : {event.contest}}, function(err, object) {                
-          //                 console.log("\n\nLet's do a set. " + JSON.stringify(object));  
-          //               }
+          } else {
+            console.log("First remove");
+            usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, "pushIdentifier" : participants[count-1].pushIdentifier}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
+              if(err){console.log("There was an error pulling");}
+              console.log("Previous fulfillment object is removed");
+              if(!err) {
+                usersMongo.update({"pushIdentifier" : participants[count-1].pushIdentifier}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+                  console.log("fulFillment object added " + JSON.stringify(object));                  
+                });
+              }
+            });
+          }
 
-
-
-          // console.log("About to send notify to " + participants[key].pushIdentifier)
-          //               
-          //               usersMongo.update({"pushIdentifier" : participants[key].pushIdentifier}, function(err, object) {
-          //                 if(participants[key].pushIdentifier != "empty") {
-          //                   sendPushNotification(participants[key].pushIdentifier, "A winner has been selected! Check out if you've won.");
-          //                 }
-          // 
-          //                 console.log("hit"); 
-          //               });
+          if(participants[count-1].pushIdentifier != "empty") {
+            sendPushNotification(participants[count-1].pushIdentifier, "A winner has been selected! Check out if you've won.");
+          }
           
           if(count == 1) {
             console.log("Let's not call our recursive function again.");    
