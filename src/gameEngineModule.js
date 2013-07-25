@@ -134,15 +134,86 @@ var gameEngineModuleHandler = function(app) {
     });
   };
   
-  var selectWinner = function(participants) {
-    for (var key in participants)
-    {
-       if(participants.hasOwnProperty(key)) {      
-         console.log("About to send notify to " + participants[key].pushIdentifier)
-         sendPushNotification(participants[key].pushIdentifier, 'You are user' + participants[key].userId);
-       }
-    }
+  // var selectWinner = function(participants, event) {
+  //   //TODO Algorithm for determining the winner out of all participants goes here.
+  //   
+  //   //Add the companyId as another field to the sweepstakes variable.
+  //   event.contest.companyId = event._id;    
+  //   
+  //  
+  // }
+  
+  function selectWinnerRecursive(count, participants, event) {
+    //Do your thang here.
+    
+    event.contest.companyId = event._id.toString();    
+    console.log("handle mongodb updates " + participants[count-1].pushIdentifier);
+    console.log("The count " + count);
+    
+    db.open(function (error, client) {
+      //Iterate through the participants and set their fulfillment object...remember to set the winner too!
+
+
+
+      var usersMongo = new mongodb.Collection(client, 'users');
+
+
+      console.log("BEFORE searching "+ participants[count-1].pushIdentifier);
+      /*
+      Delete if a previous expired company event exists
+      Add the active fulfillment
+      */
+      usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, "pushIdentifier" : participants[count-1].pushIdentifier}, function(err, object) {
+        if(!err) {
+          console.log("Checking the object " + object);
+          console.log("Checking the string object " + JSON.stringify(object));
+          console.log("The type of object " + typeof object);
+          
+          if(typeof object == "undefined") {
+            console.log("Inside typeof if");
+          }
+          
+          if(object == null) {
+            console.log("Inside THE NULL if");            
+          }
+          
+          if(object == null) {
+            console.log("AFTER searching "+ participants[count-1].pushIdentifier);
+            usersMongo.update({"pushIdentifier" : participants[count-1].pushIdentifier}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+              console.log("\n\nLet's do a push here. " + JSON.stringify(object));                  
+            });
+          } 
+          // else {
+          //                 usersMongo.update({"pushIdentifier" : participants[key].pushIdentifier}, {$set : "fulfillments" : {event.contest}}, function(err, object) {                
+          //                 console.log("\n\nLet's do a set. " + JSON.stringify(object));  
+          //               }
+
+
+
+          // console.log("About to send notify to " + participants[key].pushIdentifier)
+          //               
+          //               usersMongo.update({"pushIdentifier" : participants[key].pushIdentifier}, function(err, object) {
+          //                 if(participants[key].pushIdentifier != "empty") {
+          //                   sendPushNotification(participants[key].pushIdentifier, "A winner has been selected! Check out if you've won.");
+          //                 }
+          // 
+          //                 console.log("hit"); 
+          //               });
+          
+          if(count == 1) {
+            console.log("Let's not call our recursive function again.");    
+            db.close();    
+            return;
+          }
+          db.close();
+          count--;
+          selectWinnerRecursive(count, participants, event);
+        }                      
+      });        
+    });
   }
+
+  
   
   app.get('/determineContestWinner/:companyId', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
@@ -158,13 +229,22 @@ var gameEngineModuleHandler = function(app) {
         
         if(object) {
           console.log("calling selectWinner()");
-          selectWinner(object.participants);
+          db.close();
+          
+          var count = 0;
+          for (var key in object.participants)
+          {
+            count++;
+          }
+          console.log("sending selectWinnerRecursive with " + count);
+          //Select winner iterates through the participants, determines a winner, and sets the fulfillment parameters in the user object. 
+          selectWinnerRecursive(count, object.participants, object);
 
           res.send("determining winner");
         } else {
           res.send("No such company exists");
+          db.close();          
         }
-        db.close();
       });
     });
   });
