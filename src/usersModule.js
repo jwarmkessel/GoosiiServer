@@ -90,6 +90,42 @@ var usersModuleHandler = function(app) {
       });
     });
   });
+  
+  app.get('/getUserFulfillments/:userId/:companyId', function(req, res) {
+    console.log("getUser() for: " + req.params.userId);
+    db.open(function (error, client) {
+      if (error) throw error;    
+      //validate the id string.
+      try {
+        var checker = check(req.params.userId).len(24).isHexadecimal();   
+      }catch (e) {
+        db.close();
+        res.send("There was a problem with the userID");        
+        console.log(e.message);
+        
+        return;
+      }
+      
+      //Retrieve the users collection.
+      var usersMongo = new mongodb.Collection(client, 'users');
+        
+      //Query and update the parameters for this userId.
+      usersMongo.findOne({ "fulfillments.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, function(err, object) {
+        if(!err) {
+          if(object) {
+            console.log(JSON.stringify(object));
+            res.send(object.fulfillments);
+          } else if(object == null) {
+            res.send();
+          }
+        } else {
+          res.send();
+          console.warn(err);
+        }
+        db.close();
+      });
+    });
+  });
 
   //Query and return the company objects for all the events the user is participating in. 
   app.get('/getUserContests/:userId', function(req, res) {

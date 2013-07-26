@@ -134,6 +134,7 @@ var gameEngineModuleHandler = function(app) {
     });
   };
   
+  
   function selectWinnerRecursive(count, participants, event) {    
     event.contest.companyId = event._id.toString();    
     console.log("selectWinnerRecursive() using " + participants[count-1].pushIdentifier);
@@ -177,8 +178,6 @@ var gameEngineModuleHandler = function(app) {
     });
   }
 
-  
-  
   app.get('/determineContestWinner/:companyId', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
@@ -210,7 +209,7 @@ var gameEngineModuleHandler = function(app) {
           db.close();          
         }
       });
-    });
+    }); 
   });
   
   //Checking in is akin to entering the contest. Within this method we check whether the user is already included in this contest
