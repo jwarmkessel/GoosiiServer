@@ -23,12 +23,14 @@ var gameEngineModuleHandler = function(app) {
   var assert = require('assert');
   var Binary = require('mongodb').Binary;
   
+  //include node-time
+  var time = require('time');
+  
   //Include asynblock
   var asyncblock = require('asyncblock');
   var exec = require('child_process').exec;
     
   var utilitiesModule = require('./utilitiesModule.js');
-  utilitiesModule.getCurrentUtcTimestamp();
   
   app.get('/expireContest/:companyId', function(req, res) {
     console.log("Expire the contest");
@@ -73,9 +75,11 @@ var gameEngineModuleHandler = function(app) {
         //At command to execute batch notifications on the end date .
         asyncblock(function (flow) {
           //TODO set this up so that it can handle multiple time zones.  
-          console.log("setting at command to execute " + req.params.endDate);
+          console.log("The end date " + req.params.endDate);
+          req.params.endDate = parseInt(req.params.endDate);
+          console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(req.params.endDate));
 
-          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/:'+ req.params.companyId +'" | at ' + req.params.endDate, flow.add());
+          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(req.params.endDate), flow.add());
         });
                 
         res.send(JSON.stringify(object));
@@ -192,10 +196,10 @@ var gameEngineModuleHandler = function(app) {
             
             asyncblock(function (flow) {
               //TODO set this up so that it can handle multiple time zones.  
-              console.log("Expiring " + req.params.endDate);
+              console.log("Expiring " + event._id.toString());
               
               //expire the contest after the users have had their fulfillment set.
-              exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"');
+              exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"', flow.add());
             });
             
             console.log("Let's not call our recursive function again.");    

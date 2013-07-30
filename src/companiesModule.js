@@ -33,7 +33,16 @@ var companiesModuleHandler = function(app) {
   //Import Utilities Module
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
+
   
+  
+  app.get('/testTime', function(req, res) {
+    console.log(utilitiesModule.getCurrentUtcTimestamp());
+    var atCommandDate = utilitiesModule.getAtCommandFormattedDate(utilitiesModule.getCurrentUtcTimestamp());
+    console.log("test time returning " +atCommandDate);
+    res.send(atCommandDate);
+  });
+      
   app.get('/getCurrentTime', function(req, res) {
     console.log(utilitiesModule.getCurrentUtcTimestamp());
     res.send(utilitiesModule.getCurrentUtcTimestamp());
@@ -73,13 +82,13 @@ var companiesModuleHandler = function(app) {
     offSetHours = timeOffset.getHours();
     console.log("America/Los_Angeles Time zone " + offSetHours);
     
-    var pacificTimeOffset = offSetHours - utcHour;
+    var pacificTimeOffset = 7;
     console.log("The hour offset " + pacificTimeOffset);
     pacificTimeOffset = pacificTimeOffset * 3600000;
     console.log("offset in milliseconds " + pacificTimeOffset);
     timeInMilliseconds = timeInMilliseconds + pacificTimeOffset;
     console.log("Created object " + timeInMilliseconds);
-    console.log("Compared to utcTimestamp object " + utilitiesModule.getCurrentUtcTimestamp());
+
     res.send(timeInMilliseconds);
   });
   
