@@ -92,7 +92,7 @@ var usersModuleHandler = function(app) {
   });
   
   app.get('/getUserFulfillments/:userId/:companyId', function(req, res) {
-    console.log("getUser() for: " + req.params.userId);
+    console.log("getUser() for: http://www.goosii.com:3001/getUserFulfillments/" + req.params.userId + "/" + req.params.companyId);
     db.open(function (error, client) {
       if (error) throw error;    
       //validate the id string.
@@ -113,14 +113,16 @@ var usersModuleHandler = function(app) {
       usersMongo.findOne({ "fulfillments.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, function(err, object) {
         if(!err) {
           if(object) {
+            console.log("Object is not null");            
             console.log(JSON.stringify(object));
-            res.send(object.fulfillments);
+            res.send(object.fulfillments[0]);
           } else if(object == null) {
-            res.send();
+            console.log("Object is null");
+            res.send(null);
           }
         } else {
+          console.warn("Error occurred " + err);
           res.send();
-          console.warn(err);
         }
         db.close();
       });

@@ -12,6 +12,9 @@ var companiesModuleHandler = function(app) {
   var assert = require('assert');
   var Binary = require('mongodb').Binary;
   
+  //include node-time
+  var time = require('time');
+  
   //Include asynblock
   var asyncblock = require('asyncblock');
   var exec = require('child_process').exec;
@@ -31,6 +34,91 @@ var companiesModuleHandler = function(app) {
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
   
+  app.get('/getCurrentTime', function(req, res) {
+    console.log(utilitiesModule.getCurrentUtcTimestamp());
+    res.send(utilitiesModule.getCurrentUtcTimestamp());
+  });
+  
+  app.get('/getEndDate/:hour/:minute/:year/:month/:day', function(req, res) {
+    
+    //set the date and time.
+    timeinfo = {
+        hour: req.params.hour,
+        minute: req.params.minute,
+        year: req.params.year,
+        month: req.params.month,
+        date: req.params.day
+    };
+    
+    //Set the timezone.
+    timezone = 'America/Los_Angeles';
+
+    //Create the date & time object. Year, Month, Day, hour, Minute, Millisecond, Millisecond
+    var d = new time.Date(timeinfo.year, timeinfo.month - 1, timeinfo.date, timeinfo.hour, timeinfo.minute, 1, 1);
+    
+    //Check the timezone.
+    console.log(d.getTimezone());
+    
+    var timeOffset = new time.Date()
+    var offSetHours = timeOffset.getHours()
+    
+    console.log("Default hours " + offSetHours);
+    
+    var timeInMilliseconds = d.getTime();    
+    console.log("Original time " + timeInMilliseconds);
+    var utcHour = d.getHours();
+    console.log("Hours " + utcHour);
+
+    timeOffset.setTimezone('US/Pacific');
+    offSetHours = timeOffset.getHours();
+    console.log("America/Los_Angeles Time zone " + offSetHours);
+    
+    var pacificTimeOffset = offSetHours - utcHour;
+    console.log("The hour offset " + pacificTimeOffset);
+    pacificTimeOffset = pacificTimeOffset * 3600000;
+    console.log("offset in milliseconds " + pacificTimeOffset);
+    timeInMilliseconds = timeInMilliseconds + pacificTimeOffset;
+    console.log("Created object " + timeInMilliseconds);
+    console.log("Compared to utcTimestamp object " + utilitiesModule.getCurrentUtcTimestamp());
+    res.send(timeInMilliseconds);
+  });
+  
+  /*
+  getTimezone: [Function: getTimezone],
+  getDate: [Function: getDate],
+  getDay: [Function: getDay],
+  getYear: [Function: getYear],
+  getFullYear: [Function: getFullYear],
+  getHours: [Function: getHours],
+  getMinutes: [Function: getMinutes],
+  getMonth: [Function: getMonth],
+  getSeconds: [Function: getSeconds],
+  getTimezoneOffset: [Function: getTimezoneOffset],
+  getTimezoneAbbr: [Function: getTimezoneAbbr],
+  setAllDateFields: [Function: setAllDateFields],
+  setDate: [Function: setDate],
+  setFullYear: [Function: setFullYear],
+  setHours: [Function: setHours],
+  setMilliseconds: [Function: setMilliseconds],
+  setMinutes: [Function: setMinutes],
+  setMonth: [Function: setMonth],
+  setSeconds: [Function: setSeconds],
+  setTime: [Function: setTime],
+  setUTCDate: [Function: setUTCDate],
+  setUTCFullYear: [Function: setUTCFullYear],
+  setUTCHours: [Function: setUTCHours],
+  setUTCMilliseconds: [Function: setUTCMillseconds],
+  setUTCMinutes: [Function: setUTCMinutes],
+  setUTCMonth: [Function: setUTCMonth],
+  setUTCSeconds: [Function: setUTCSeconds],
+  toDateString: [Function: toDateString],
+  toTimeString: [Function: toTimeString],
+  toString: [Function: toString],
+  toLocaleDateString: [Function: toLocaleDateString],
+  toLocaleTimeString: [Function: toLocaleTimeString],
+  toLocaleString: [Function: toString]  
+  */
+    
   app.get('/createCompany/:companyInfo', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 

@@ -11,6 +11,10 @@ var pushNotifyModuleHandler = function(app) {
       ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
       ,http = require('http');
   
+  //Import Utilities Module
+  var utilitiesModule = require('./utilitiesModule.js');
+  utilitiesModule.getCurrentUtcTimestamp();
+      
   //Used for creating connection APNS server    	
 	function hextobin(hexstr) {
       buf = new Buffer(hexstr.length / 2);
@@ -89,9 +93,7 @@ var pushNotifyModuleHandler = function(app) {
   });
 
   app.get('/', function(req, res) {
-    var utc_timestamp = getCurrentUtcTimestamp();
-
-    res.send("Server is okay "+ utc_timestamp);
+    res.send("Server is okay "+ utilitiesModule.getCurrentUtcTimestamp());
   });
 };
 

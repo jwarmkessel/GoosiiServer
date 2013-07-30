@@ -30,6 +30,30 @@ var gameEngineModuleHandler = function(app) {
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
   
+  app.get('/expireContest/:companyId', function(req, res) {
+    console.log("Expire the contest");
+    //Open the database
+    db.open(function (error, client) {
+      if (error) {throw error;}    
+
+      var companiesMongo = new mongodb.Collection(client, 'companies');    
+      var contestObj = {  "startDate" : "",
+                          "endDate" : "",
+                      		"prize" : "",
+                      		"prizeImg" : ""
+                       };
+      companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : {"contest" : contestObj}}, {safe:true}, function(err, object) {
+        if(!err) {
+          console.log("success " + JSON.stringify(object));
+        } else {
+          console.log("error " + JSON.stringify(err));
+        }
+        db.close();
+        res.send();
+      });
+    });
+  });
+    
   app.get('/createContest/:companyId/:startDate/:endDate/:prize/:prizeImg', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
     console.log("Checking vars " + req.params.startDate + " : "+ req.params.endDate + " : "+ req.params.prize + " : "+ req.params.prizeImg);
@@ -51,9 +75,9 @@ var gameEngineModuleHandler = function(app) {
           //TODO set this up so that it can handle multiple time zones.  
           console.log("setting at command to execute " + req.params.endDate);
 
-          exec('echo "curl http://127.0.0.1:3001/sendNotification" | at ' + req.params.endDate, flow.add());
+          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/:'+ req.params.companyId +'" | at ' + req.params.endDate, flow.add());
         });
-        
+                
         res.send(JSON.stringify(object));
         db.close();
       });
@@ -134,7 +158,6 @@ var gameEngineModuleHandler = function(app) {
     });
   };
   
-  
   function selectWinnerRecursive(count, participants, event) {    
     event.contest.companyId = event._id.toString();    
     console.log("selectWinnerRecursive() using " + participants[count-1].pushIdentifier);
@@ -166,6 +189,15 @@ var gameEngineModuleHandler = function(app) {
           }
           
           if(count == 1) {
+            
+            asyncblock(function (flow) {
+              //TODO set this up so that it can handle multiple time zones.  
+              console.log("Expiring " + req.params.endDate);
+              
+              //expire the contest after the users have had their fulfillment set.
+              exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"');
+            });
+            
             console.log("Let's not call our recursive function again.");    
             db.close();    
             return;
