@@ -301,13 +301,18 @@ var gameEngineModuleHandler = function(app) {
           //Push this object into the array of participants.
           companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$push: {"participants" : addToParticipantsObj}}, {safe:true}, function(err, result) {                        
             if(!err) {
-              usersMongo.update({_id: new ObjectID(req.params.userId)}, {$push: {"contests" : req.params.companyId}}, {safe:true}, function(err, userObject) {
+              usersMongo.update({_id: new ObjectID(req.params.userId)}, {$push: {"contests" : {"companyId" :req.params.companyId, "participationCount" : 1}}}, {safe:true}, function(err, userObject) {
                 if(!err) {
-                 res.send("You are now participating"); 
-                }
-                
-                //Close the database.
-                db.close();
+                  companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.companyId}}, {safe:true}, function(err, userObject) {
+                    if(!err) {
+                      res.send("You are now participating"); 
+                    } else {
+                      console.log("Error " + JSON.stringify(err));
+                    }
+                    //Close the database.
+                    db.close();
+                  });                 
+                }                
               });
             }
           });  

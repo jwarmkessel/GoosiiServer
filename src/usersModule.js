@@ -165,6 +165,27 @@ var usersModuleHandler = function(app) {
       });
     });
   });
+  
+  app.get('/addUserParticipation/:userId/:companyId', function(req, res) {
+    db.open(function (error, client) {    
+      var usersMongo = new mongodb.Collection(client, 'users');
+      var companiesMongo = new mongodb.Collection(client, 'companies');
+      
+      usersMongo.update({"contests.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, {$inc: {"contests.$.participationCount": 1}},function(err, userObj) {
+        if(!err) {
+          
+          companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push : {"entryList" : req.params.userId }}, function(err, companyObj) {
+            if(!err) {
+              res.send("Participation complete");
+            }
+            
+            //close database
+            db.close();
+          });
+        }
+      });
+    });
+  });
 
 };
 
