@@ -162,27 +162,75 @@ var gameEngineModuleHandler = function(app) {
     });
   };
   
+  var setWinner = function(companyId) {
+    /*
+    - Get the entryList
+    - Select a winner from the list
+    - Set winner
+    */
+    db.open(function (error, client) {
+      var companiesMongo = new mongodb.Collection(client, 'companies');
+      var usersMongo = new mongodb.Collection(client, 'users');
+      
+      companiesMongo.findOne({_id: new ObjectID(companyId)}, function(err, companyObj) {
+        if(!err) {
+          if(companyObj.entryList) {
+            console.log(JSON.stringify(companyObj));
+            var count = 0;
+            for (var key in companyObj.entryList)
+            {
+              count++;
+            }
+            console.log("The Length " + count);
+            var winnerId = companyObj.entryList[Math.floor(Math.random() * count)];
+            console.log(winnerId);
+            
+            //If there are participants then set a winner
+            if(count > 0) {              
+              usersMongo.update({_id: new ObjectID(winnerId), "fulfillments.companyId": { $in : [companyId]}}, {$set : {"fulfillments.$.isWinner" : 1}},function(err, companyObj) {
+                if(!err) {
+                 console.log("Winner has been set");
+                }
+                db.close();                
+              });
+            }
+          }
+        }
+      });
+    });
+  };
+  
+  app.get('/testWinner/:companyId', function(req, res) {
+    setWinner(req.params.companyId);
+    res.send("Setting winner");
+  });
+  
   function selectWinnerRecursive(count, participants, event) {    
     event.contest.companyId = event._id.toString();    
     console.log("selectWinnerRecursive() using " + participants[count-1].pushIdentifier);
     
     db.open(function (error, client) {
       var usersMongo = new mongodb.Collection(client, 'users');
-
-      usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, "pushIdentifier" : participants[count-1].pushIdentifier}, function(err, object) {
+      
+      //TODO THERE IS A BUG IN THIS IMMEDIATE DB CALL
+      //_id: new ObjectID(req.params.companyId)
+      usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, function(err, object) {
         if(!err) {          
           if(object == null) {
-            usersMongo.update({"pushIdentifier" : participants[count-1].pushIdentifier}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+            console.log("No fulfillments object for " + event._id.toString());
+
+            usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
               console.log("fulFillment object added " + JSON.stringify(object));                  
             });
           } else {
             console.log("First remove");
-            usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, "pushIdentifier" : participants[count-1].pushIdentifier}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
+            usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
               if(err){console.log("There was an error pulling");}
               console.log("Previous fulfillment object is removed");
               if(!err) {
-                usersMongo.update({"pushIdentifier" : participants[count-1].pushIdentifier}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-                  console.log("fulFillment object added " + JSON.stringify(object));                  
+                usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+                  console.log("fulFillment object added " + JSON.stringify(object));       
+                  db.close();           
                 });
               }
             });
@@ -303,7 +351,7 @@ var gameEngineModuleHandler = function(app) {
             if(!err) {
               usersMongo.update({_id: new ObjectID(req.params.userId)}, {$push: {"contests" : {"companyId" :req.params.companyId, "participationCount" : 1}}}, {safe:true}, function(err, userObject) {
                 if(!err) {
-                  companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.companyId}}, {safe:true}, function(err, userObject) {
+                  companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(err, userObject) {
                     if(!err) {
                       res.send("You are now participating"); 
                     } else {

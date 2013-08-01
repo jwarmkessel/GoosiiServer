@@ -145,13 +145,14 @@ var usersModuleHandler = function(app) {
           
           //Get the array of companyId's and build the list of company objects to query for.
           for(var key in userObj.contests) { 
-            console.log("companyId being added to query " + userObj.contests[key]);           
-            var companyObjectId = new ObjectID(userObj.contests[key]);
+            console.log("companyId being added to query " + userObj.contests[key].companyId);           
+            var companyObjectId = new ObjectID(userObj.contests[key].companyId);
             companyObjArray.push(companyObjectId);
             console.log(JSON.stringify(companyObjArray));
             numOfEvents++;
           }
           
+
           //Query the companies collection and return the list of company objects.
           companiesMongo.find({"_id": {$in : companyObjArray }}).toArray(function(err, companyObj) {
             if(!err) {
@@ -171,9 +172,11 @@ var usersModuleHandler = function(app) {
       var usersMongo = new mongodb.Collection(client, 'users');
       var companiesMongo = new mongodb.Collection(client, 'companies');
       
+      //Push a contest object to the user object.
       usersMongo.update({"contests.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, {$inc: {"contests.$.participationCount": 1}},function(err, userObj) {
         if(!err) {
           
+          //Push an entry onto the company object.
           companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push : {"entryList" : req.params.userId }}, function(err, companyObj) {
             if(!err) {
               res.send("Participation complete");
