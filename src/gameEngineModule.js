@@ -321,7 +321,7 @@ var gameEngineModuleHandler = function(app) {
           for (var key in userObject.contests)
           {
             //If the companyID is present within the users list of contests then we know the user has already checked into this event.
-            if(userObject.contests[key] == req.params.companyId) {
+            if(userObject.contests[key].companyId == req.params.companyId) {
               
               //Set a flag to indicate that the user is already checked in.
               isCheckedIn = 1;
