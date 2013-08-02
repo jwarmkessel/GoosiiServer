@@ -15,40 +15,30 @@ var geoSpatialModuleHandler = function(app) {
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
   
-  // app.get('/nearbyCompanies', function(req, res) {
-  //   var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
-  // 
-  //   //insert the user document object into the collection
-  //   db.open(function (error, client) {
-  //     if (error) {console.log("Db open failed"); throw error};
-  //     var company = new mongodb.Collection(client, 'companies');
-  //     company.find().toArray(function(err, results) {
-  //       console.log(JSON.stringify(results));
-  //       res.send(results);        
-  //       db.close();
-  //     });
-  //   });
-  // });
   var nearbyCompaniesRecursive = function(userId, companiesArray, count, res) {
     console.log("nearbyCompaniesRecursive()");
-    console.log("userid " + userId);
-    console.log("companiesArray " + JSON.stringify(companiesArray[count-1]));    
-    console.log("count " + count);    
+
+    console.log("db.open()");
     db.open(function (error, client) {
       var usersMongo = new mongodb.Collection(client, 'users');
       
+      console.log("query database");
       usersMongo.findOne({ _id : new ObjectID(userId)}, function(err, userObj) {
         if(!err) {          
+          console.log("Create super company/user object");
           console.log(companiesArray[count-1]);
           companiesArray[count-1].user = userObj
         }
         
         if(count == 1) {
+          console.log("Finish recursive method and respond");
           res.send(companiesArray);
+          console.log("close db");
           db.close();
           
           return;
         }
+        console.log("close db");
         db.close();
         nearbyCompaniesRecursive(userId, companiesArray, count-1, res);
         
@@ -56,65 +46,29 @@ var geoSpatialModuleHandler = function(app) {
     });           
   };
 
+  //This doesn't actually get the closest companies. It gets EVERY SINGLE company.
+  //TODO setup geo-spatial queries
   app.get('/nearbyCompanies/:userId', function(req, res) {
-    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
+    console.log("nearbyCompanies request");
 
-    //insert the user document object into the collection
+    console.log("open db");
     db.open(function (error, client) {
       if (error) {console.log("Db open failed"); throw error};
       var company = new mongodb.Collection(client, 'companies');
+      console.log("query db");
       company.find().toArray(function(err, results) {
-        console.log(JSON.stringify(results.length));
-        if(results.length == 0) {
-         res.send(); 
+        if(!err) {
+          if(results.length == 0) {
+           res.send(); 
+          }
         }
+        console.log("close db");
         db.close();
         nearbyCompaniesRecursive(req.params.userId, results, results.length, res);
       });
     });
   });
-
-
-  app.get('/getCompanyAndUser/:companyId/:userId', function(req, res) {  
-    console.log("Get sweepstake");
-    console.log("The company id " + req.params.companyId);
-    try {
-      var checker = check(req.params.companyId).len(24).isHexadecimal();   
-      console.log("The checker : " + checker);
-    }catch (e) {
-      console.log(e.message); //Please enter a valid integer
-      res.send("There was a problem with the userID");
-      db.close();
-
-      return;
-    }
-
-    db.open(function (error, client) {
-      if (error) throw error;
-      var companiesMongo = new mongodb.Collection(client, 'companies');  
-      var usersMongo = new mongodb.Collection(client, 'users');      
-      console.log("So far so good");    
-      companiesMongo.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, companyObj) {
-        if (err) console.warn(err.message);      
-        if(!err) {
-          if (companyObj) {
-            usersMongo.findOne({_id: new ObjectID(req.params.userId)}, {safe:false}, function(err, userObj) {
-              if(!err) {
-                if(userObj) {
-                  companyObj.user = userObj;    
-                  console.log(companyObj);            
-                }
-              }
-
-              //send the response to the client
-              res.send(companyObj);
-              db.close()
-            });
-          }
-        }
-      });
-    });
-  });  
+  
 };
 
 exports.geoSpatialModuleHandler = geoSpatialModuleHandler;
