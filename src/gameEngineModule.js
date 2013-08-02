@@ -181,15 +181,19 @@ var gameEngineModuleHandler = function(app) {
             {
               count++;
             }
-            console.log("The Length " + count);
-            var winnerId = companyObj.entryList[Math.floor(Math.random() * count)];
-            console.log(winnerId);
             
-            //If there are participants then set a winner
+            //If there are participants then set the reward object in rewards array
             if(count > 0) {              
-              usersMongo.update({_id: new ObjectID(winnerId), "fulfillments.companyId": { $in : [companyId]}}, {$set : {"fulfillments.$.isWinner" : 1}},function(err, companyObj) {
+              
+              console.log("The Length " + count);
+              var winnerId = companyObj.entryList[Math.floor(Math.random() * count)];
+              console.log(winnerId);
+              companyObj.contest.companyId = companyId;
+              console.log("Adding this contest " + JSON.stringify(companyObj.contest));
+              usersMongo.update({_id: new ObjectID(winnerId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
                 if(!err) {
                  console.log("Winner has been set");
+
                 }
                 db.close();                
               });
@@ -212,8 +216,6 @@ var gameEngineModuleHandler = function(app) {
     db.open(function (error, client) {
       var usersMongo = new mongodb.Collection(client, 'users');
       
-      //TODO THERE IS A BUG IN THIS IMMEDIATE DB CALL
-      //_id: new ObjectID(req.params.companyId)
       usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, function(err, object) {
         if(!err) {          
           if(object == null) {
@@ -283,7 +285,7 @@ var gameEngineModuleHandler = function(app) {
           {
             count++;
           }
-          console.log("sending selectWinnerRecursive with " + count);
+          console.log("sending selectWinnerRecursive with " + count + "\n");
           //Select winner iterates through the participants, determines a winner, and sets the fulfillment parameters in the user object. 
           selectWinnerRecursive(count, object.participants, object);
 
@@ -382,7 +384,7 @@ var gameEngineModuleHandler = function(app) {
 
       return;
     }
-    db.close();
+
     db.open(function (error, client) {
       if (error) throw error;
       var company = new mongodb.Collection(client, 'companies');  
@@ -406,6 +408,48 @@ var gameEngineModuleHandler = function(app) {
       });
     });
   });
+  
+  app.get('/getCompanyAndUser/:companyId/:userId', function(req, res) {  
+    console.log("Get sweepstake");
+    console.log("The company id " + req.params.companyId);
+    try {
+      var checker = check(req.params.companyId).len(24).isHexadecimal();   
+      console.log("The checker : " + checker);
+    }catch (e) {
+      console.log(e.message); //Please enter a valid integer
+      res.send("There was a problem with the userID");
+      db.close();
+
+      return;
+    }
+    
+    db.open(function (error, client) {
+      if (error) throw error;
+      var companiesMongo = new mongodb.Collection(client, 'companies');  
+      var usersMongo = new mongodb.Collection(client, 'users');      
+      console.log("So far so good");    
+      companiesMongo.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, companyObj) {
+        if (err) console.warn(err.message);      
+        if(!err) {
+          if (companyObj) {
+            usersMongo.findOne({_id: new ObjectID(req.params.userId)}, {safe:false}, function(err, userObj) {
+              if(!err) {
+                if(userObj) {
+                  companyObj.user = userObj;    
+                  console.log(companyObj);            
+                }
+              }
+
+              //send the response to the client
+              res.send(companyObj);
+              db.close()
+            });
+          }
+        }
+      });
+    });
+  });
+  
 };
 
 exports.gameEngineModuleHandler = gameEngineModuleHandler;
