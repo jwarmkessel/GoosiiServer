@@ -48,7 +48,7 @@ var companiesModuleHandler = function(app) {
     res.send(utilitiesModule.getCurrentUtcTimestamp());
   });
   
-  app.get('/getEndDate/:hour/:minute/:year/:month/:day', function(req, res) {
+  app.get('/createEndDate/:hour/:minute/:year/:month/:day', function(req, res) {
     
     //set the date and time.
     timeinfo = {
@@ -89,7 +89,7 @@ var companiesModuleHandler = function(app) {
     timeInMilliseconds = timeInMilliseconds + pacificTimeOffset;
     console.log("Created object " + timeInMilliseconds);
 
-    res.send(timeInMilliseconds);
+    res.send(timeInMilliseconds.toString());
   });
   
   /*
