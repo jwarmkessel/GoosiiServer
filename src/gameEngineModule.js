@@ -428,24 +428,26 @@ var gameEngineModuleHandler = function(app) {
       var companiesMongo = new mongodb.Collection(client, 'companies');  
       var usersMongo = new mongodb.Collection(client, 'users');      
       console.log("So far so good");    
+      
       companiesMongo.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, companyObj) {
-        if (err) console.warn(err.message);      
         if(!err) {
           if (companyObj) {
+            console.log("I have the comp object");
             usersMongo.findOne({_id: new ObjectID(req.params.userId)}, {safe:false}, function(err, userObj) {
               if(!err) {
                 if(userObj) {
+                  console.log("I have the user obj");
                   companyObj.user = userObj;    
                   console.log(companyObj);            
                 }
               }
-
-              //send the response to the client
-              res.send(companyObj);
+              res.send(JSON.stringify(companyObj));
               db.close()
             });
           }
-        }
+        } 
+      
+        db.close()  
       });
     });
   });
