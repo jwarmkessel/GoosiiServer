@@ -32,7 +32,9 @@ var usersModuleHandler = function(app) {
                          		"phoneNumber" : "",                         		                      		                         		
                          		"birthday" : "",
                          		"contests" : [],
-                         		"posts" : []
+                         		"posts" : [],
+                         		"rewards" : [],
+                         		"fulfillments" : []
                            };
                            
 
