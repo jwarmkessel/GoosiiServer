@@ -48,8 +48,8 @@ var usersModuleHandler = function(app) {
           // this _id was already inserted in the database
         }
 
-        res.send(JSON.stringify(object[0]._id));
         db.close();
+        res.send(JSON.stringify(object[0]._id));
       });
     });
   });
@@ -84,11 +84,11 @@ var usersModuleHandler = function(app) {
           if(object) {
             console.log(JSON.stringify(object));
           }
-          res.send();
         } else {
           console.warn(err.message);
         }
         db.close();
+        res.send("login successful");        
       });
     });
   });
@@ -187,6 +187,9 @@ var usersModuleHandler = function(app) {
             //close database
             db.close();
           });
+        } else {
+         db.close();
+         res.send("There was an error in adding user participation"); 
         }
       });
     });

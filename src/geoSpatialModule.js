@@ -69,6 +69,8 @@ var geoSpatialModuleHandler = function(app) {
     });
   });
   
+  
+  
 };
 
 exports.geoSpatialModuleHandler = geoSpatialModuleHandler;

@@ -442,16 +442,39 @@ var gameEngineModuleHandler = function(app) {
                 }
               }
               res.send(JSON.stringify(companyObj));
-              db.close()
+              db.close();
             });
           }
-        } 
-      
-        db.close()  
+        }else { 
+          db.close();  
+          res.send("There was an error, dude.");
+        }
       });
     });
   });
   
+  app.get('/removeFulfillmentObject/:companyId/:userId', function(req, res) {  
+    db.open(function (error, client) {
+      if (error) throw error;
+      
+      var usersMongo = new mongodb.Collection(client, 'users');
+      
+      usersMongo.update({ _id : new ObjectID(req.params.userId), "fulfillments.companyId": { $in : [req.params.companyId]}},{ $pull: { "fulfillments": {"companyId" : req.params.companyId}}} , {safe:false}, function(err, userObj) {
+        if(!err) {
+          if(userObj) {
+            console.log("I have the user obj");
+            companyObj.user = userObj;    
+            console.log(companyObj);            
+          }
+        }
+        res.send("Fulfillment flag removed");
+        db.close();
+      });
+    });
+  });
+  
+  // db.users.update({_id : ObjectId("51f9d464a02efddd23000001"), "fulfillments.companyId": { $in : ["51d9fd1812a0f4116b675197"]}}, { $pull: { "fulfillments": {"companyId" : "51d9fd1812a0f4116b675197"}}});
+  //   db.users.find({_id : ObjectId("51f9d464a02efddd23000001"), "fulfillments.companyId": { $in : ["51d9fd1812a0f4116b675197"]}}).pretty();
 };
 
 exports.gameEngineModuleHandler = gameEngineModuleHandler;
