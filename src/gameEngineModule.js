@@ -473,6 +473,50 @@ var gameEngineModuleHandler = function(app) {
     });
   });
   
+  app.get('/getReward/:companyId/:userId', function(req, res) {  
+    db.open(function (error, client) {
+      if (error) throw error;
+      
+      var usersMongo = new mongodb.Collection(client, 'users');
+      
+      usersMongo.findOne({ _id : new ObjectID(req.params.userId), "rewards.companyId": { $in : [req.params.companyId]}}, {safe:false}, function(err, userObj) {
+        var isWinner;
+        if(!err) {
+          if(userObj) {
+            console.log("YES");          
+            console.log("YES" + userObj);
+            isWinner = "YES"
+          } else {
+            isWinner = "NO"
+            console.log("NO" + userObj);
+          }
+        }
+        res.send(isWinner);
+        db.close();
+      });
+    });
+  });
+  
+  app.get('/checkPassword/:companyId/:password', function(req, res) {  
+    db.open(function (error, client) {
+      if (error) throw error;
+      
+      var companiesMongo = new mongodb.Collection(client, 'companies');
+      
+      companiesMongo.findOne({ _id : new ObjectID(req.params.companyId)}, {safe:false}, function(err, compObj) {
+        if(!err) {
+          if(compObj) {
+            if(req.params.password == compObj.contest.password) {
+              res.send("valid");
+            }else {
+              res.send("invalid");
+            }
+          }
+        }
+        db.close();
+      });
+    });
+  });
   // db.users.update({_id : ObjectId("51f9d464a02efddd23000001"), "fulfillments.companyId": { $in : ["51d9fd1812a0f4116b675197"]}}, { $pull: { "fulfillments": {"companyId" : "51d9fd1812a0f4116b675197"}}});
   //   db.users.find({_id : ObjectId("51f9d464a02efddd23000001"), "fulfillments.companyId": { $in : ["51d9fd1812a0f4116b675197"]}}).pretty();
 };

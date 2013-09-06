@@ -142,7 +142,8 @@ var companiesModuleHandler = function(app) {
      		                                  "startDate" : "",
      		                                  "endDate" : "",
      		                                  "prize" : "",
-     		                                  "prizeImg" : ""
+     		                                  "prizeImg" : "",
+     		                                  "post" : ""
      	                                  },
                             "participants" : []
                           }
