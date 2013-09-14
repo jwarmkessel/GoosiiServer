@@ -1,4 +1,4 @@
-var usersModuleHandler = function(app) {
+var usersModuleHandler = function(app, dbName) {
   console.log("including usersModule");
   
   var check = require('validator').check
@@ -8,7 +8,7 @@ var usersModuleHandler = function(app) {
   var mongodb = require('mongodb');
   var ObjectID = require('mongodb').ObjectID;
   var server = new mongodb.Server('127.0.0.1', 27017, {auto_reconnect: true, safe:true});
-  var db = new mongodb.Db('GlobalGoosiiMetricsDB', server);   
+  var db = new mongodb.Db(dbName, server);   
   var GridStore = require('mongodb').GridStore;
   var assert = require('assert');
   var Binary = require('mongodb').Binary;

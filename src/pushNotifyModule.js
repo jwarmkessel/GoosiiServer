@@ -1,4 +1,4 @@
-var pushNotifyModuleHandler = function(app) {
+var pushNotifyModuleHandler = function(app, dbName) {
   console.log("including pushNotifyModule");
   
   var express = require('express')
