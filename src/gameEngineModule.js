@@ -222,19 +222,36 @@ var gameEngineModuleHandler = function(app, dbName) {
             console.log("No fulfillments object for " + event._id.toString());
 
             usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-              console.log("fulFillment object added " + JSON.stringify(object));                  
+              console.log("fulFillment object added " + JSON.stringify(object));       
+              
+              usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
+                console.log("contest object deleted" + JSON.stringify(object));
+                
+                usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
+                  console.log("contest object added count " + JSON.stringify(object));
+                  db.close();           
+                });
+              });           
             });
           } else {
             console.log("First remove");
+            
             usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
               if(err){console.log("There was an error pulling");}
               console.log("Previous fulfillment object is removed");
-              if(!err) {
-                usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-                  console.log("fulFillment object added " + JSON.stringify(object));       
-                  db.close();           
-                });
-              }
+              
+              usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+                console.log("fulFillment object added " + JSON.stringify(object));
+
+                usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
+                  console.log("contest object deleted" + JSON.stringify(object));
+                  
+                  usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
+                    console.log("contest object added count " + JSON.stringify(object));
+                    db.close();           
+                  });
+                });       
+              });
             });
           }
 
