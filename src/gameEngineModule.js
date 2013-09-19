@@ -194,8 +194,12 @@ var gameEngineModuleHandler = function(app, dbName) {
                 if(!err) {
                  console.log("Winner has been set");
 
+                 //Delete the contents of entryList 
+                 companiesMongo.update({_id : new ObjectID("52019889f868cadd76000002")}, {$unset : { "entryList" : }}), function(err, object) {
+                   console.log("contest object added count " + JSON.stringify(object));
+                   db.close();           
+                 });
                 }
-                db.close();                
               });
             }
           }
@@ -269,10 +273,14 @@ var gameEngineModuleHandler = function(app, dbName) {
               exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"', flow.add());
             });
             
-            console.log("Let's not call our recursive function again.");    
+            console.log("Let's not call our recursive function again."); 
+            
+            //Set the winner and delete the entrylist contents
+            setWinner(event._id.toString());   
             db.close();    
             return;
           }
+          
           db.close();
           count--;
           selectWinnerRecursive(count, participants, event);
