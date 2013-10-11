@@ -70,6 +70,28 @@ var geoSpatialModuleHandler = function(app, dbName) {
   });
   
   
+  app.get('/testGeoSpatialQuery/:userId/:longitude/:latitude', function(req, res) {
+    console.log("nearbyCompanies request");
+
+    console.log("open db");
+    console.log("Long: "+ req.params.longitude + " Lat: "+ req.params.latitude);
+    //db.runCommand( { geoNear : "companies" , near : [-122.015041, 37.324044], num : 10, spherical: true });
+    db.command( { geoNear : "companies" , near : [parseFloat(req.params.longitude), parseFloat(req.params.latitude)], num : 10, spherical: true }, function(err, results){
+      
+      db.open(function (error, client) {
+        var usersMongo = new mongodb.Collection(client, 'users');
+
+        console.log("query database");
+        usersMongo.findOne({ _id : new ObjectID(req.params.userId)}, function(err, userObj) {
+        results.userObject = userObj;
+        console.log("success");
+        db.close();
+        res.send(results);  
+        });
+      });  
+    });
+  });
+
   
 };
 

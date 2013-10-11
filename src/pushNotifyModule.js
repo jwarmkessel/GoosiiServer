@@ -40,7 +40,7 @@ var pushNotifyModuleHandler = function(app, dbName) {
     });
 
     var
-        pushnd = { aps: { alert:'This is another test message' }, customParam: { foo: 'bar' } } // 'aps' is required
+        pushnd = { aps: { alert:'Come to Pizza California\'s Monday Night Happy Hour tonight!' }, customParam: { foo: 'bar' } } // 'aps' is required
         ,hextoken = '26cfbde486e222fa76a7150ab67b0504c4ff430829c0921b42502fa9c6e19504' // Push token from iPhone app. 32 bytes as hexadecimal string
         //,hextoken = '6ebf5909fb9fa9a451ab685820896c475a62fb7b8410119926f5783f38b9bb57' // Push token from iPhone app. 32 bytes as hexadecimal string
         ,token = hextobin(hextoken)

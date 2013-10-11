@@ -33,13 +33,34 @@ var companiesModuleHandler = function(app, dbName) {
   //Import Utilities Module
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
-
   
+  app.get('/getComp/:companyId',function  (req,res,next) {
+    res.type('application/json');
+    console.log(req.params.companyId);
+    //insert the user document object into the collection
+    db.open(function (error, client) {
+      if (error) {console.log("Db open failed"); throw error};
+
+      var company = new mongodb.Collection(client, 'companies');
+
+      company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, object) {
+        console.log("The object " + object);
+        if (err) console.warn(err.message);
+        if (err && err.message.indexOf('E11000 ') !== -1) {
+          // this _id was already inserted in the database
+        }
+        res.jsonp(object);
+        db.close();
+      });
+    });      
+  });
   
   app.get('/testTime', function(req, res) {
     console.log(utilitiesModule.getCurrentUtcTimestamp());
     var atCommandDate = utilitiesModule.getAtCommandFormattedDate(utilitiesModule.getCurrentUtcTimestamp());
     console.log("test time returning " +atCommandDate);
+    callback("hello world");
+    
     res.send(atCommandDate);
   });
       

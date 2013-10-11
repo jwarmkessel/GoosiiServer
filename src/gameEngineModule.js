@@ -56,13 +56,22 @@ var gameEngineModuleHandler = function(app, dbName) {
     });
   });
     
-  app.get('/createContest/:companyId/:startDate/:endDate/:prize/:prizeImg', function(req, res) {
+  app.get('/createContest/:companyId/:startDate/:endDate/:prize/:prizeImg/:post/:partPost/:rewardPassword', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
     console.log("Checking vars " + req.params.startDate + " : "+ req.params.endDate + " : "+ req.params.prize + " : "+ req.params.prizeImg);
     
     //Assembling the update for the company document.
-    var contestObj = {"contest" : { "startDate" : req.params.startDate, "endDate" : req.params.endDate, "prize" : req.params.prize, "prizeImg" : req.params.prizeImg}};
-    
+    var contestObj = {"contest" : 
+                        { "startDate" : req.params.startDate, 
+                            "endDate" : req.params.endDate, 
+                              "prize" : req.params.prize, 
+                           "prizeImg" : req.params.prizeImg,
+                  "participationPost" : req.params.post,
+                           "password" : req.params.partPost,
+                               "post" : req.params.rewardPassword
+                        }
+                     };
+
     //insert the user document object into the collection
     db.open(function (error, client) {
       if (error) {console.log("Db open failed"); throw error};
@@ -195,7 +204,7 @@ var gameEngineModuleHandler = function(app, dbName) {
                  console.log("Winner has been set");
 
                  //Delete the contents of entryList 
-                 companiesMongo.update({_id : new ObjectID("52019889f868cadd76000002")}, {$unset : { "entryList" : }}), function(err, object) {
+                 companiesMongo.update({_id : new ObjectID("52019889f868cadd76000002")}, {$unset : { "entryList" : ""}}, function(err, object) {
                    console.log("contest object added count " + JSON.stringify(object));
                    db.close();           
                  });
@@ -231,10 +240,8 @@ var gameEngineModuleHandler = function(app, dbName) {
               usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
                 console.log("contest object deleted" + JSON.stringify(object));
                 
-                usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
-                  console.log("contest object added count " + JSON.stringify(object));
-                  db.close();           
-                });
+                db.close();
+
               });           
             });
           } else {
@@ -250,10 +257,7 @@ var gameEngineModuleHandler = function(app, dbName) {
                 usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
                   console.log("contest object deleted" + JSON.stringify(object));
                   
-                  usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
-                    console.log("contest object added count " + JSON.stringify(object));
-                    db.close();           
-                  });
+                  db.close();           
                 });       
               });
             });
@@ -491,9 +495,13 @@ var gameEngineModuleHandler = function(app, dbName) {
             companyObj.user = userObj;    
             console.log(companyObj);            
           }
+          usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
+            console.log("contest object added count " + JSON.stringify(object));
+            res.send("Fulfillment flag removed and participation count set to 0");
+            db.close();           
+          });
+          
         }
-        res.send("Fulfillment flag removed");
-        db.close();
       });
     });
   });
