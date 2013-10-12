@@ -56,22 +56,40 @@ var gameEngineModuleHandler = function(app, dbName) {
     });
   });
     
-  app.get('/createContest/:companyId/:startDate/:endDate/:prize/:prizeImg/:post/:partPost/:rewardPassword', function(req, res) {
-    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
-    console.log("Checking vars " + req.params.startDate + " : "+ req.params.endDate + " : "+ req.params.prize + " : "+ req.params.prizeImg);
+  //Set the job number for the Event created
+  var setEventJobNumber = function(companyId, jobNumber, res) {
+    db.open(function (error, client) {
+      if (error) {console.log("Db open failed"); throw error};
+      
+      var companiesMongo = new mongodb.Collection(client, 'companies');
+      
+      companiesMongo.update({_id: ObjectID(companyId)}, {$set : {"contest.jobId" : jobNumber}}, {safe:true}, function(err, object) {
+
+        db.close();
+        res.jsonp(JSON.stringify(object));        
+      });
+    });
+  };
     
+  app.get('/createContest/:companyId/:eventObj', function(req, res) {
+    //var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
+    var eventObject = JSON.parse(req.params.eventObj);
+    console.log("start date " + eventObject.startDate);
+    console.log("end date " + eventObject.endDate);    
     //Assembling the update for the company document.
     var contestObj = {"contest" : 
-                        { "startDate" : req.params.startDate, 
-                            "endDate" : req.params.endDate, 
-                              "prize" : req.params.prize, 
-                           "prizeImg" : req.params.prizeImg,
-                  "participationPost" : req.params.post,
-                           "password" : req.params.partPost,
-                               "post" : req.params.rewardPassword
+                        { "startDate" : eventObject.startDate,
+                            "endDate" : eventObject.endDate, 
+                              "prize" : eventObject.prize, 
+                           "prizeImg" : eventObject.prizeImg,
+              "mobileBackgroundImage" : eventObject.mobileBackgroundImage,                           
+                  "participationPost" : eventObject.participationPost,
+                               "post" : eventObject.post,                  
+                           "password" : eventObject.password,
+                            "website" : eventObject.website
                         }
                      };
-
+    
     //insert the user document object into the collection
     db.open(function (error, client) {
       if (error) {console.log("Db open failed"); throw error};
@@ -80,23 +98,46 @@ var gameEngineModuleHandler = function(app, dbName) {
       
       companies.update({_id: ObjectID(req.params.companyId)}, {$set : contestObj}, {safe:true}, function(err, object) {
         if (err) console.warn(err.message);
-
+        db.close();
+        
         //At command to execute batch notifications on the end date .
         asyncblock(function (flow) {
           //TODO set this up so that it can handle multiple time zones.  
-          console.log("The end date " + req.params.endDate);
-          req.params.endDate = parseInt(req.params.endDate);
-          console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(req.params.endDate));
+          console.log("The end date " + eventObject.endDate);
+          eventObject.endDate = parseInt(eventObject.endDate);
+          console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate));
+          
+          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate), function (error, stdout, stderr) {
+             console.log('stdout: ' + stdout);
+             console.log('stderr: ' + stderr);
 
-          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(req.params.endDate), flow.add());
+             var stderrArray = stderr.split(/[ ]+/);
+
+             var i = 0;
+             var jobNumber;
+             for(i=0; i< stderrArray.length; i++) {
+
+               if(stderrArray[i] == "using") {
+                 var jobIndex = i+2;
+                console.log("The job number is " + stderrArray[jobIndex]);   
+                jobNumber = stderrArray[jobIndex];          
+               }
+             }
+
+             if (error !== null) {
+                 console.log('exec error: ' + error);
+             }
+             
+             //Set job number in company object in mongodb.
+             setEventJobNumber(req.params.companyId, jobNumber, res);
+
+
+          });
         });
-                
-        res.send(JSON.stringify(object));
-        db.close();
       });
     });
   });
-
+  
   //Used for creating connection APNS server    	
 	function hextobin(hexstr) {
       buf = new Buffer(hexstr.length / 2);
@@ -204,7 +245,7 @@ var gameEngineModuleHandler = function(app, dbName) {
                  console.log("Winner has been set");
 
                  //Delete the contents of entryList 
-                 companiesMongo.update({_id : new ObjectID("52019889f868cadd76000002")}, {$unset : { "entryList" : ""}}, function(err, object) {
+                 companiesMongo.update({_id : new ObjectID(companyId)}, {$unset : { "entryList" : ""}}, function(err, object) {
                    console.log("contest object added count " + JSON.stringify(object));
                    db.close();           
                  });
