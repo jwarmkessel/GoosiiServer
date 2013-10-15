@@ -32,6 +32,54 @@ var gameEngineModuleHandler = function(app, dbName) {
     
   var utilitiesModule = require('./utilitiesModule.js');
   
+  
+  
+  
+  
+  
+  
+  // app.options('/posts', function(req, res){
+  //   console.log("writing headers only");
+  //   res.header("Access-Control-Allow-Origin", "*");
+  //   res.end('');
+  // });
+  // 
+  // app.use(express.bodyParser());
+  
+  // app.get('/fileUpload', function(req, res) {
+  //   
+  //   console.log(req.body);
+  //   console.log(req.files);
+  // 
+  //   var uploadedFile = req.files.uploadingFile;
+  //   
+  //   
+  //   var tmpPath = uploadedFile.path;
+  //   var targetPath = './uploads/' + uploadedFile.name;
+  // 
+  //   fs.rename(tmpPath, targetPath, function(err) {
+  //   if (err) throw err;
+  //   fs.unlink(tmpPath, function() {
+  //       if (err) throw err;
+  //           res.jsonp('File Uploaded to ' + targetPath + ' - ' + uploadedFile.size + ' bytes');
+  //       });
+  //   });
+  // });
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   app.get('/expireContest/:companyId', function(req, res) {
     console.log("Expire the contest");
     //Open the database
@@ -130,7 +178,6 @@ var gameEngineModuleHandler = function(app, dbName) {
              
              //Set job number in company object in mongodb.
              setEventJobNumber(req.params.companyId, jobNumber, res);
-
 
           });
         });
