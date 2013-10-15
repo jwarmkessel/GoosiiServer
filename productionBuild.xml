@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+   <project name="GoosiiServer" default="MyTarget" >
+        <property name="SrcDir" value="/usr/local/lib/WhoPaysNext/src"/>
+        <property name="BuildDir" value="/usr/local/lib/WhoPaysNext"/>
+
+				<target name="MyTarget">
+                <echo message = "Source directory is = ${SrcDir}" />
+                <echo message = "Build directory is ${BuildDir}" />
+                <!-- the absolute path to the location of the buildfile -->
+                <echo>${basedir}</echo>
+                <!-- the absolute path of the buildfile -->
+            		<echo>${ant.file}</echo>
+                <!-- ant.version - the version of Ant that you are running -->
+            		<echo>${ant.version}</echo>
+                <!-- ant.project.name - the name of the project that is currently executing; it is set in the name attribute of <project>. -->
+            		<echo>${ant.project.name}</echo>
+                <!-- ant.java.version - the JVM version Ant detected; currently it can hold the values "1.1", "1.2", "1.3", "1.4" and "1.5". -->
+            		<echo>${ant.java.version}</echo>
+
+                <copy todir="/usr/local/lib/WhoPaysNext/src">
+                        <fileset dir="./src"/>
+                </copy>
+       </target> 
+			 <echo>Copy to remote server</echo>
+			 <scp todir="root:1Gateway@50.57.225.202:/usr/local/lib/GoosiiProductionServer/app">
+			   <fileset dir="src"/>
+			 </scp>
+			 <echo>Copy to remote server complete!</echo>
+   </project>
