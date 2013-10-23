@@ -5,9 +5,9 @@ var pushNotifyModuleHandler = function(app, dbName) {
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
-      ,certPem = fs.readFileSync('GoosiiCert.pem', encoding='ascii')
-      ,keyPem = fs.readFileSync('GoosiiKey-noenc.pem', encoding='ascii')
-      ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
+      ,certPem = fs.readFileSync('goosii_apns_dev_cer.pem', encoding='ascii')
+      ,keyPem = fs.readFileSync('goosii_apns_dev_key_noenc.pem', encoding='ascii')
+      ,caCert = fs.readFileSync('entrust_2048_ca.cer', encoding='ascii')
       ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
       ,http = require('http');
   
@@ -40,8 +40,8 @@ var pushNotifyModuleHandler = function(app, dbName) {
     });
 
     var
-        pushnd = { aps: { alert:'Come to Pizza California\'s Monday Night Happy Hour tonight!' }, customParam: { foo: 'bar' } } // 'aps' is required
-        ,hextoken = '26cfbde486e222fa76a7150ab67b0504c4ff430829c0921b42502fa9c6e19504' // Push token from iPhone app. 32 bytes as hexadecimal string
+        pushnd = { aps: { alert:'Goosii Push Notification Test.' }, customParam: { foo: 'bar' } } // 'aps' is required
+        ,hextoken = '6ebf5909fb9fa9a451ab685820896c475a62fb7b8410119926f5783f38b9bb57' // Push token from iPhone app. 32 bytes as hexadecimal string
         //,hextoken = '6ebf5909fb9fa9a451ab685820896c475a62fb7b8410119926f5783f38b9bb57' // Push token from iPhone app. 32 bytes as hexadecimal string
         ,token = hextobin(hextoken)
         ,payload = JSON.stringify(pushnd)
@@ -86,9 +86,10 @@ var pushNotifyModuleHandler = function(app, dbName) {
             ,msgid = (data[2] << 24) + (data[3] << 16) + (data[4] << 8 ) + (data[5])
         ;
 
-        console.log(command + ':' + status + ':' + msgid);
-    });
+        console.log("Apple Push Notification Error message :" + command + ':' + status + ':' + msgid);
 
+    });
+    
     res.send("Message sent");
   });
 

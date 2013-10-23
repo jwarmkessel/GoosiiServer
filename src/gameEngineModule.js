@@ -5,10 +5,10 @@ var gameEngineModuleHandler = function(app, dbName) {
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
-      ,certPem = fs.readFileSync('GoosiiCert.pem', encoding='ascii')
-      ,keyPem = fs.readFileSync('GoosiiKey-noenc.pem', encoding='ascii')
-      ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
-      ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+      // ,certPem = fs.readFileSync('GoosiiCert.pem', encoding='ascii')
+      // ,keyPem = fs.readFileSync('GoosiiKey-noenc.pem', encoding='ascii')
+      // ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
+      // ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
       ,http = require('http');
     
   var check = require('validator').check
