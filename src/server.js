@@ -100,6 +100,7 @@ app.all('/', function(req, res, next) {
  
 app.get('/', function(req, res, next) {
   // Handle the get for this route
+  res.send("Server okay");
 });
 
 

@@ -5,10 +5,10 @@ var gameEngineModuleHandler = function(app, dbName) {
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
-      // ,certPem = fs.readFileSync('GoosiiCert.pem', encoding='ascii')
-      // ,keyPem = fs.readFileSync('GoosiiKey-noenc.pem', encoding='ascii')
-      // ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
-      // ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+      ,certPem = fs.readFileSync('goosii_apns_dev_cer.pem', encoding='ascii')
+      ,keyPem = fs.readFileSync('goosii_apns_dev_key_noenc.pem', encoding='ascii')
+      ,caCert = fs.readFileSync('entrust_2048_ca.cer', encoding='ascii')
+      ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
       ,http = require('http');
     
   var check = require('validator').check
@@ -32,54 +32,7 @@ var gameEngineModuleHandler = function(app, dbName) {
     
   var utilitiesModule = require('./utilitiesModule.js');
   
-  
-  
-  
-  
-  
-  
-  // app.options('/posts', function(req, res){
-  //   console.log("writing headers only");
-  //   res.header("Access-Control-Allow-Origin", "*");
-  //   res.end('');
-  // });
-  // 
-  // app.use(express.bodyParser());
-  
-  // app.get('/fileUpload', function(req, res) {
-  //   
-  //   console.log(req.body);
-  //   console.log(req.files);
-  // 
-  //   var uploadedFile = req.files.uploadingFile;
-  //   
-  //   
-  //   var tmpPath = uploadedFile.path;
-  //   var targetPath = './uploads/' + uploadedFile.name;
-  // 
-  //   fs.rename(tmpPath, targetPath, function(err) {
-  //   if (err) throw err;
-  //   fs.unlink(tmpPath, function() {
-  //       if (err) throw err;
-  //           res.jsonp('File Uploaded to ' + targetPath + ' - ' + uploadedFile.size + ' bytes');
-  //       });
-  //   });
-  // });
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  //This ends the event, tags all participants with a fulfillment flag, and resets the contest object in the companies document.
   app.get('/expireContest/:companyId', function(req, res) {
     console.log("Expire the contest");
     //Open the database
@@ -87,11 +40,18 @@ var gameEngineModuleHandler = function(app, dbName) {
       if (error) {throw error;}    
 
       var companiesMongo = new mongodb.Collection(client, 'companies');    
-      var contestObj = {  "startDate" : "",
-                          "endDate" : "",
-                      		"prize" : "",
-                      		"prizeImg" : ""
-                       };
+       
+       var contestObj =  { "startDate" : "",
+                             "endDate" : "", 
+                               "prize" : "", 
+                            "prizeImg" : "",
+               "mobileBackgroundImage" : "",                           
+                   "participationPost" : "",
+                                "post" : "",                  
+                            "password" : "",
+                             "website" : ""
+                         }                    
+
       companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : {"contest" : contestObj}}, {safe:true}, function(err, object) {
         if(!err) {
           console.log("success " + JSON.stringify(object));
@@ -265,6 +225,7 @@ var gameEngineModuleHandler = function(app, dbName) {
     - Select a winner from the list
     - Set winner
     */
+    console.log("Calling setWinner with company " + companyId);
     db.open(function (error, client) {
       var companiesMongo = new mongodb.Collection(client, 'companies');
       var usersMongo = new mongodb.Collection(client, 'users');
@@ -368,8 +329,9 @@ var gameEngineModuleHandler = function(app, dbName) {
             console.log("Let's not call our recursive function again."); 
             
             //Set the winner and delete the entrylist contents
-            setWinner(event._id.toString());   
-            db.close();    
+            console.log("THIS IS THE FREAKING ID: "+event.contest.companyId);
+            setWinner(event.contest.companyId);   
+            
             return;
           }
           

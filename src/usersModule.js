@@ -136,7 +136,6 @@ var usersModuleHandler = function(app, dbName) {
     console.log("getUserContests called by user " + req.params.userId);
     //The array of company id's to query in companies.
     var companyObjArray = new Array();
-    var singleCompanyArray = new Array();
     
     var numOfEvents = 0;
     db.open(function (error, client) {    
@@ -160,7 +159,10 @@ var usersModuleHandler = function(app, dbName) {
             if(!err) {
               //Now that I have the list of company objects I can pass it back and modify the order here 
               console.log("Sending client these company objects " + JSON.stringify(companyObj));
-              res.send(companyObj);
+              userContestObj = {};
+              userContestObj.contests = companyObj;
+              userContestObj.userObject = userObj;
+              res.send(userContestObj);
               db.close();              
             }
           });
