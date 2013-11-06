@@ -154,11 +154,16 @@ var companiesModuleHandler = function(app, dbName) {
 
      //Create the user document object to save to mongoDB 
     var companyObject =   {
-                            "name" : "",
-     	                      "address" : "",
-     	                      "longitude" : "",
-     	                      "latitude" : "",
-     	                      "telephone" : "",
+                            "name" : "Goosii",
+     	                      "address" : "767 Chopin Drive, Sunnyvale, CA 94087",
+                          	"location" : {
+                          		"type" : "Point",
+                          		"coordinates" : [
+                          			-121.89409,
+                          			37.383613
+                          		]
+                          	},
+     	                      "telephone" : "4086054692",
      	                      "contest" : {
      		                                  "startDate" : "",
      		                                  "endDate" : "",

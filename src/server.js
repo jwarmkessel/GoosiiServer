@@ -1,6 +1,6 @@
 
 //Swith out these strings to run either production, sandbox, or demo.
-var environment = "sandbox";
+var environment = "production";
 var port;
 var serverType;
 var dbName;
@@ -161,19 +161,19 @@ app.post('/test', express.bodyParser(), function (req, res) {
 
 // //import Goosii Modules
 var pushNotifyModule = require('./pushNotifyModule.js');
-pushNotifyModule.pushNotifyModuleHandler(app, dbName);
+pushNotifyModule.pushNotifyModuleHandler(app, dbName, serverType);
 
 var usersModule = require('./usersModule.js');
-usersModule.usersModuleHandler(app, dbName);
+usersModule.usersModuleHandler(app, dbName, serverType);
 
 var companiesModule = require('./companiesModule.js');
-companiesModule.companiesModuleHandler(app, dbName);
+companiesModule.companiesModuleHandler(app, dbName, serverType);
 
 var gameEngineModule = require('./gameEngineModule.js');
-gameEngineModule.gameEngineModuleHandler(app, dbName);
+gameEngineModule.gameEngineModuleHandler(app, dbName, serverType);
 
 var geoSpatialModule = require('./geoSpatialModule.js');
-geoSpatialModule.geoSpatialModuleHandler(app, dbName);
+geoSpatialModule.geoSpatialModuleHandler(app, dbName, serverType);
 
 //Start the http server listening on port 3001
 app.listen(port);

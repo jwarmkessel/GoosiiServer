@@ -1,16 +1,32 @@
-var pushNotifyModuleHandler = function(app, dbName) {
+var pushNotifyModuleHandler = function(app, dbName, serverType) {
   console.log("including pushNotifyModule");
-  
+
   var express = require('express')
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
-      ,certPem = fs.readFileSync('goosii_apns_dev_cer.pem', encoding='ascii')
-      ,keyPem = fs.readFileSync('goosii_apns_dev_key_noenc.pem', encoding='ascii')
-      ,caCert = fs.readFileSync('entrust_2048_ca.cer', encoding='ascii')
-      ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
       ,http = require('http');
+      
+  var certPem;
+  var keyPem;
+  var caCert;
+  var options;
+  var apnsServer = "gateway.sandbox.push.apple.com";
   
+  if(serverType == "production") {
+    certPem = fs.readFileSync('./apns_dist/goosii_apns_dist_cer.pem', encoding='ascii')
+    keyPem = fs.readFileSync('./apns_dist/goosii_apns_dist_noenc.pem', encoding='ascii')
+    caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
+    options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+    apnsServer = "gateway.push.apple.com"
+  } else {
+    console.log("Setting up sandbox apns configurations");
+    certPem = fs.readFileSync('./apns_dev/goosii_apns_dev_cer.pem', encoding='ascii')
+    keyPem = fs.readFileSync('./apns_dev/goosii_apns_dev_key_noenc.pem', encoding='ascii')
+    caCert = fs.readFileSync('./apns_dev/entrust_2048_ca.cer', encoding='ascii')
+    options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+    apnsServer = "gateway.sandbox.push.apple.com";    
+  }  
   //Import Utilities Module
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
@@ -32,7 +48,7 @@ var pushNotifyModuleHandler = function(app, dbName) {
 
     next = function(){};
 
-    var stream = tls.connect(2195, 'gateway.sandbox.push.apple.com', options, function() {
+    var stream = tls.connect(2195, apnsServer, options, function() {
         console.log("Connecting with APNS");
         // connected
         next( !stream.authorized, stream );

@@ -1,16 +1,33 @@
-var gameEngineModuleHandler = function(app, dbName) {
+var gameEngineModuleHandler = function(app, dbName, serverType) {
   console.log("including gameEngineModule");
   
   var express = require('express')
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
-      ,certPem = fs.readFileSync('goosii_apns_dev_cer.pem', encoding='ascii')
-      ,keyPem = fs.readFileSync('goosii_apns_dev_key_noenc.pem', encoding='ascii')
-      ,caCert = fs.readFileSync('entrust_2048_ca.cer', encoding='ascii')
-      ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
       ,http = require('http');
-    
+      
+  var certPem;
+  var keyPem;
+  var caCert;
+  var options;
+  var apnsServer = "gateway.sandbox.push.apple.com";
+
+  if(serverType == "production") {
+    certPem = fs.readFileSync('./apns_dist/goosii_apns_dist_cer.pem', encoding='ascii')
+    keyPem = fs.readFileSync('./apns_dist/goosii_apns_dist_noenc.pem', encoding='ascii')
+    caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
+    options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+    apnsServer = "gateway.push.apple.com"
+  } else {
+    console.log("Setting up sandbox apns configurations");
+    certPem = fs.readFileSync('./apns_dev/goosii_apns_dev_cer.pem', encoding='ascii')
+    keyPem = fs.readFileSync('./apns_dev/goosii_apns_dev_key_noenc.pem', encoding='ascii')
+    caCert = fs.readFileSync('./apns_dev/entrust_2048_ca.cer', encoding='ascii')
+    options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+    apnsServer = "gateway.sandbox.push.apple.com";    
+  }
+  
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
     
@@ -162,7 +179,7 @@ var gameEngineModuleHandler = function(app, dbName) {
 
     next = function(){};
 
-    var stream = tls.connect(2195, 'gateway.sandbox.push.apple.com', options, function() {
+    var stream = tls.connect(2195, apnsServer, options, function() {
         console.log("Connecting with APNS");
         // connected
         next( !stream.authorized, stream );
@@ -545,12 +562,11 @@ var gameEngineModuleHandler = function(app, dbName) {
             companyObj.user = userObj;    
             console.log(companyObj);            
           }
-          usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
+          usersMongo.update({_id : new ObjectID(req.params.userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
             console.log("contest object added count " + JSON.stringify(object));
             res.send("Fulfillment flag removed and participation count set to 0");
             db.close();           
           });
-          
         }
       });
     });
@@ -580,23 +596,28 @@ var gameEngineModuleHandler = function(app, dbName) {
     });
   });
   
-  app.get('/checkPassword/:companyId/:password', function(req, res) {  
+  app.get('/checkPassword/:companyId/:userId/:password', function(req, res) {  
     db.open(function (error, client) {
       if (error) throw error;
       
       var companiesMongo = new mongodb.Collection(client, 'companies');
+      var usersMongo = new mongodb.Collection(client, 'users');
       
       companiesMongo.findOne({ _id : new ObjectID(req.params.companyId)}, {safe:false}, function(err, compObj) {
         if(!err) {
           if(compObj) {
             if(req.params.password == compObj.contest.password) {
-              res.send("valid");
+
+              usersMongo.update({_id : new ObjectID(req.params.userId)}, {$pull : {"rewards" : {"companyId" : req.params.companyId}}}, function(err, object) {                 
+                 db.close();           
+                 res.send("valid");
+               });
             }else {
+              db.close();                            
               res.send("invalid");
             }
           }
         }
-        db.close();
       });
     });
   });
