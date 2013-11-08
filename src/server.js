@@ -1,6 +1,6 @@
 
 //Swith out these strings to run either production, sandbox, or demo.
-var environment = "production";
+var environment = "sandbox";
 var port;
 var serverType;
 var dbName;
@@ -174,6 +174,9 @@ gameEngineModule.gameEngineModuleHandler(app, dbName, serverType);
 
 var geoSpatialModule = require('./geoSpatialModule.js');
 geoSpatialModule.geoSpatialModuleHandler(app, dbName, serverType);
+
+var yourCompanyWebsiteModule = require('./yourCompanyWebsiteModule.js');
+yourCompanyWebsiteModule.yourCompanyWebsiteModuleHandler(app, dbName, serverType);
 
 //Start the http server listening on port 3001
 app.listen(port);

@@ -2,6 +2,7 @@ var companiesModuleHandler = function(app, dbName) {
   console.log("including companiesModule");
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
+    ,loggingSystem = require('./loggingSystem.js'); // 11/05/2013 by MC
     
   //Native mongodb objects
   var mongodb = require('mongodb');
@@ -58,10 +59,10 @@ var companiesModuleHandler = function(app, dbName) {
   app.get('/testTime', function(req, res) {
     console.log(utilitiesModule.getCurrentUtcTimestamp());
     var atCommandDate = utilitiesModule.getAtCommandFormattedDate(utilitiesModule.getCurrentUtcTimestamp());
+    loggingSystem.addToLog('companiesModule.js: test time returning ' + atCommandDate);
     console.log("test time returning " +atCommandDate);
-    callback("hello world");
-    
     res.send(atCommandDate);
+    
   });
       
   app.get('/getCurrentTime', function(req, res) {
@@ -150,6 +151,7 @@ var companiesModuleHandler = function(app, dbName) {
   */
     
   app.get('/createCompany/:companyInfo', function(req, res) {
+
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 

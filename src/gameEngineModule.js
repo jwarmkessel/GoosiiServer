@@ -119,9 +119,9 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     db.open(function (error, client) {
       if (error) {console.log("Db open failed"); throw error};
       
-      var companies = new mongodb.Collection(client, 'companies');
+      var companiesMongo = new mongodb.Collection(client, 'companies');
       
-      companies.update({_id: ObjectID(req.params.companyId)}, {$set : contestObj}, {safe:true}, function(err, object) {
+      companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : contestObj}, {safe:true}, function(err, object) {
         if (err) console.warn(err.message);
         db.close();
         

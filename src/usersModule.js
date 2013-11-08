@@ -17,6 +17,8 @@ var usersModuleHandler = function(app, dbName) {
   utilitiesModule.getCurrentUtcTimestamp();
   
   app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
+    
+    console.log("starting createUser with userIdentifier " + req.params.userIdentifier);
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 
