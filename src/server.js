@@ -111,8 +111,6 @@ app.post('/test', express.bodyParser(), function (req, res) {
    res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
   // res.header("Access-Control-Allow-Headers", "X-Requested-With");
  
- 
- 
   // Request methods you wish to allow
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   console.log("got post");
