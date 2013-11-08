@@ -1,33 +1,18 @@
-var gameEngineModuleHandler = function(app, dbName, serverType) {
+var gameEngineModuleHandler = function(app, dbName) {
   console.log("including gameEngineModule");
   
   var express = require('express')
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
+      ,certPem = fs.readFileSync('GoosiiCert.pem', encoding='ascii')
+      ,keyPem = fs.readFileSync('GoosiiKey-noenc.pem', encoding='ascii')
+      ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
+      ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+      ,loggingSystem = require('./loggingSystem.js')// 11/05/2013 by MC
       ,http = require('http');
-      
-  var certPem;
-  var keyPem;
-  var caCert;
-  var options;
-  var apnsServer = "gateway.sandbox.push.apple.com";
-
-  if(serverType == "production") {
-    certPem = fs.readFileSync('./apns_dist/goosii_apns_dist_cer.pem', encoding='ascii')
-    keyPem = fs.readFileSync('./apns_dist/goosii_apns_dist_noenc.pem', encoding='ascii')
-    caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
-    options = { key: keyPem, cert: certPem, ca: [ caCert ] }
-    apnsServer = "gateway.push.apple.com"
-  } else {
-    console.log("Setting up sandbox apns configurations");
-    certPem = fs.readFileSync('./apns_dev/goosii_apns_dev_cer.pem', encoding='ascii')
-    keyPem = fs.readFileSync('./apns_dev/goosii_apns_dev_key_noenc.pem', encoding='ascii')
-    caCert = fs.readFileSync('./apns_dev/entrust_2048_ca.cer', encoding='ascii')
-    options = { key: keyPem, cert: certPem, ca: [ caCert ] }
-    apnsServer = "gateway.sandbox.push.apple.com";    
-  }
-  
+    
+  loggingSystem.addToLog('gameEngineModule.js: using GEM.');
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
     
@@ -49,30 +34,24 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     
   var utilitiesModule = require('./utilitiesModule.js');
   
-  //This ends the event, tags all participants with a fulfillment flag, and resets the contest object in the companies document.
   app.get('/expireContest/:companyId', function(req, res) {
     console.log("Expire the contest");
     //Open the database
     db.open(function (error, client) {
-      if (error) {throw error;}    
+      if (error) {loggingSystem.addToLog('gameEngineModule.js: Db open failed.'); throw error;}    
 
       var companiesMongo = new mongodb.Collection(client, 'companies');    
-       
-       var contestObj =  { "startDate" : "",
-                             "endDate" : "", 
-                               "prize" : "", 
-                            "prizeImg" : "",
-               "mobileBackgroundImage" : "",                           
-                   "participationPost" : "",
-                                "post" : "",                  
-                            "password" : "",
-                             "website" : ""
-                         }                    
-
+      var contestObj = {  "startDate" : "",
+                          "endDate" : "",
+                      		"prize" : "",
+                      		"prizeImg" : ""
+                       };
       companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : {"contest" : contestObj}}, {safe:true}, function(err, object) {
         if(!err) {
+          loggingSystem.addToLog('gameEngineModule.js: Company Expiration Successful.');
           console.log("success " + JSON.stringify(object));
         } else {
+          loggingSystem.addToLog('gameEngineModule.js: Company Expiration Failed.');
           console.log("error " + JSON.stringify(err));
         }
         db.close();
@@ -81,87 +60,43 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     });
   });
     
-  //Set the job number for the Event created
-  var setEventJobNumber = function(companyId, jobNumber, res) {
-    db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
-      
-      var companiesMongo = new mongodb.Collection(client, 'companies');
-      
-      companiesMongo.update({_id: ObjectID(companyId)}, {$set : {"contest.jobId" : jobNumber}}, {safe:true}, function(err, object) {
+  app.get('/createContest/:companyId/:startDate/:endDate/:prize/:prizeImg', function(req, res) {
+    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
-        db.close();
-        res.jsonp(JSON.stringify(object));        
-      });
-    });
-  };
+    loggingSystem.addToLog('gameEngineModule.js: Checking vars ' + req.params.startDate + ' : '+ req.params.endDate + ' : '+ req.params.prize + ' : '+ req.params.prizeImg);
+    console.log("Checking vars " + req.params.startDate + " : "+ req.params.endDate + " : "+ req.params.prize + " : "+ req.params.prizeImg);
     
-  app.get('/createContest/:companyId/:eventObj', function(req, res) {
-    //var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
-    var eventObject = JSON.parse(req.params.eventObj);
-    console.log("start date " + eventObject.startDate);
-    console.log("end date " + eventObject.endDate);    
     //Assembling the update for the company document.
-    var contestObj = {"contest" : 
-                        { "startDate" : eventObject.startDate,
-                            "endDate" : eventObject.endDate, 
-                              "prize" : eventObject.prize, 
-                           "prizeImg" : eventObject.prizeImg,
-              "mobileBackgroundImage" : eventObject.mobileBackgroundImage,                           
-                  "participationPost" : eventObject.participationPost,
-                               "post" : eventObject.post,                  
-                           "password" : eventObject.password,
-                            "website" : eventObject.website
-                        }
-                     };
+    var contestObj = {"contest" : { "startDate" : req.params.startDate, "endDate" : req.params.endDate, "prize" : req.params.prize, "prizeImg" : req.params.prizeImg}};
     
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if (error) {console.log("Db open failed"); loggingSystem.addToLog('gameEngineModule.js: Db open failed.'); throw error};
       
-      var companiesMongo = new mongodb.Collection(client, 'companies');
+      var companies = new mongodb.Collection(client, 'companies');
       
-      companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : contestObj}, {safe:true}, function(err, object) {
-        if (err) console.warn(err.message);
-        db.close();
-        
+      companies.update({_id: ObjectID(req.params.companyId)}, {$set : contestObj}, {safe:true}, function(err, object) {
+        if (err) {
+          loggingSystem.addToLog('gameEngineModule.js: Company Creation Successful.');
+          console.warn(err.message);
+        } 
+
         //At command to execute batch notifications on the end date .
         asyncblock(function (flow) {
           //TODO set this up so that it can handle multiple time zones.  
-          console.log("The end date " + eventObject.endDate);
-          eventObject.endDate = parseInt(eventObject.endDate);
-          console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate));
-          
-          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate), function (error, stdout, stderr) {
-             console.log('stdout: ' + stdout);
-             console.log('stderr: ' + stderr);
+          console.log("The end date " + req.params.endDate);
+          req.params.endDate = parseInt(req.params.endDate);
+          console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(req.params.endDate));
 
-             var stderrArray = stderr.split(/[ ]+/);
-
-             var i = 0;
-             var jobNumber;
-             for(i=0; i< stderrArray.length; i++) {
-
-               if(stderrArray[i] == "using") {
-                 var jobIndex = i+2;
-                console.log("The job number is " + stderrArray[jobIndex]);   
-                jobNumber = stderrArray[jobIndex];          
-               }
-             }
-
-             if (error !== null) {
-                 console.log('exec error: ' + error);
-             }
-             
-             //Set job number in company object in mongodb.
-             setEventJobNumber(req.params.companyId, jobNumber, res);
-
-          });
+          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(req.params.endDate), flow.add());
         });
+                
+        res.send(JSON.stringify(object));
+        db.close();
       });
     });
   });
-  
+
   //Used for creating connection APNS server    	
 	function hextobin(hexstr) {
       buf = new Buffer(hexstr.length / 2);
@@ -179,10 +114,14 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
 
     next = function(){};
 
-    var stream = tls.connect(2195, apnsServer, options, function() {
+    var stream = tls.connect(2195, 'gateway.sandbox.push.apple.com', options, function() {
+
+        loggingSystem.addToLog('gameEngineModule.js: Connecting with APNS');
         console.log("Connecting with APNS");
         // connected
         next( !stream.authorized, stream );
+
+        loggingSystem.addToLog('gameEngineModule.js: Connected with APNS');
         console.log("Connected with APNS" + stream.authorized);
     });
 
@@ -242,7 +181,6 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     - Select a winner from the list
     - Set winner
     */
-    console.log("Calling setWinner with company " + companyId);
     db.open(function (error, client) {
       var companiesMongo = new mongodb.Collection(client, 'companies');
       var usersMongo = new mongodb.Collection(client, 'users');
@@ -268,16 +206,15 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               usersMongo.update({_id: new ObjectID(winnerId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
                 if(!err) {
                  console.log("Winner has been set");
-
-                 //Delete the contents of entryList 
-                 companiesMongo.update({_id : new ObjectID(companyId)}, {$unset : { "entryList" : ""}}, function(err, object) {
-                   console.log("contest object added count " + JSON.stringify(object));
-                   db.close();           
-                 });
+                } else {
+                  loggingSystem.addToLog('gameEngineModule.js: Users update failed.');
                 }
+                db.close();                
               });
             }
           }
+        } else {
+          loggingSystem.addToLog('gameEngineModule.js: Company Read failed.');
         }
       });
     });
@@ -293,39 +230,37 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     console.log("selectWinnerRecursive() using " + participants[count-1].pushIdentifier);
     
     db.open(function (error, client) {
+      if (error) {console.log("Db open failed"); 
+                  loggingSystem.addToLog('gameEngineModule.js: Db open failed.');  throw error};
       var usersMongo = new mongodb.Collection(client, 'users');
       
       usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, function(err, object) {
         if(!err) {          
           if(object == null) {
+            loggingSystem.addToLog('gameEngineModule.js: No fulfillments object for ' + event._id.toString()); 
             console.log("No fulfillments object for " + event._id.toString());
 
             usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-              console.log("fulFillment object added " + JSON.stringify(object));       
-              
-              usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
-                console.log("contest object deleted" + JSON.stringify(object));
-                
-                db.close();
-
-              });           
+              loggingSystem.addToLog("gameEnginerModule.js: fulFillment object added " + JSON.stringify(object)); 
+              console.log("fulFillment object added " + JSON.stringify(object));                  
             });
           } else {
             console.log("First remove");
-            
             usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
-              if(err){console.log("There was an error pulling");}
-              console.log("Previous fulfillment object is removed");
-              
-              usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-                console.log("fulFillment object added " + JSON.stringify(object));
+              if(err){
 
-                usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
-                  console.log("contest object deleted" + JSON.stringify(object));
-                  
+              loggingSystem.addToLog("gameEnginerModule.js: There was an error pulling "); 
+                console.log("There was an error pulling");
+              }
+              loggingSystem.addToLog("gameEnginerModule.js: Previous fulfillment object is removed "); 
+              console.log("Previous fulfillment object is removed");
+              if(!err) {
+                usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+                  loggingSystem.addToLog("gameEnginerModule.js: fulFillment object added " + JSON.stringify(object)); 
+                  console.log("fulFillment object added " + JSON.stringify(object));       
                   db.close();           
-                });       
-              });
+                });
+              }
             });
           }
 
@@ -336,22 +271,18 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           if(count == 1) {
             
             asyncblock(function (flow) {
-              //TODO set this up so that it can handle multiple time zones.  
+              //TODO set this up so that it can handle multiple time zones. 
+              loggingSystem.addToLog("gameEnginerModule.js: Expiring " + event._id.toString());  
               console.log("Expiring " + event._id.toString());
               
               //expire the contest after the users have had their fulfillment set.
               exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"', flow.add());
             });
             
-            console.log("Let's not call our recursive function again."); 
-            
-            //Set the winner and delete the entrylist contents
-            console.log("THIS IS THE FREAKING ID: "+event.contest.companyId);
-            setWinner(event.contest.companyId);   
-            
+            console.log("Let's not call our recursive function again.");    
+            db.close();    
             return;
           }
-          
           db.close();
           count--;
           selectWinnerRecursive(count, participants, event);
@@ -365,14 +296,23 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if (error) {
+
+        loggingSystem.addToLog("gameEnginerModule.js: Db open failed. " + event._id.toString());  
+        console.log("Db open failed"); 
+        throw error;
+      };
       
       var companies = new mongodb.Collection(client, 'companies');
       
       companies.findOne({_id: new ObjectID(req.params.companyId)}, function(err, object) {
-        if (err) console.warn(err.message);
+        if (err) {
+          loggingSystem.addToLog("gameEnginerModule.js: Companies Read Failed. " + event._id.toString()); 
+          console.warn(err.message);
+        } 
         
         if(object) {
+          loggingSystem.addToLog("gameEnginerModule.js: calling selectWinner()"); 
           console.log("calling selectWinner()");
           db.close();
           
@@ -381,6 +321,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           {
             count++;
           }
+          loggingSystem.addToLog("gameEnginerModule.js: sending selectWinnerRecursive with " + count + "\n"); 
           console.log("sending selectWinnerRecursive with " + count + "\n");
           //Select winner iterates through the participants, determines a winner, and sets the fulfillment parameters in the user object. 
           selectWinnerRecursive(count, object.participants, object);
@@ -400,16 +341,23 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
 
     //Open the database
     db.open(function (error, client) {
-      if (error) {throw error;}    
+      if (error) {
+        loggingSystem.addToLog("gameEnginerModule.js: Db open failed."); 
+        throw error;
+      }    
 
       var usersMongo = new mongodb.Collection(client, 'users');
       var isCheckedIn = 0;
       //find the single users object.
       usersMongo.findOne({_id: new ObjectID(req.params.userId)}, function(err, userObject) {
-        if(err){ return false };
+        if(err){ 
+          loggingSystem.addToLog("gameEnginerModule.js: Users Read failed."); 
+          return false;
+        };
         
         //Returned object should be a JSON array. Iterate through and check whether the companyID already exists within this list.
         if(userObject) {
+          loggingSystem.addToLog("gameEnginerModule.js: object exists."); 
           console.log("object exists");
           
           //Quickly check how many contests the user is particpating in here.
@@ -428,8 +376,10 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
             }            
             i++;
           }
+          loggingSystem.addToLog("gameEnginerModule.js: This object has " + i + " elements"); 
           console.log("This object has " + i + " elements");
         } else {
+          loggingSystem.addToLog("gameEnginerModule.js: enterContest() Something's wrong. There should be an object."); 
           console.log("enterContest() Something's wrong. There should be an object.");
           db.close();
           res.send();
@@ -447,12 +397,15 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           //Push this object into the array of participants.
           companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$push: {"participants" : addToParticipantsObj}}, {safe:true}, function(err, result) {                        
             if(!err) {
+              loggingSystem.addToLog("gameEnginerModule.js: Company Update Successful."); 
               usersMongo.update({_id: new ObjectID(req.params.userId)}, {$push: {"contests" : {"companyId" :req.params.companyId, "participationCount" : 1}}}, {safe:true}, function(err, userObject) {
                 if(!err) {
+                  loggingSystem.addToLog("gameEnginerModule.js: User Update Successful.");
                   companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(err, userObject) {
                     if(!err) {
                       res.send("You are now participating"); 
                     } else {
+                      loggingSystem.addToLog("gameEnginerModule.js: Error " + JSON.stringify(err));
                       console.log("Error " + JSON.stringify(err));
                     }
                     //Close the database.
@@ -470,10 +423,14 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   app.get('/getContest/:companyId', function(req, res) {  
     console.log("Get sweepstake");
     console.log("The company id " + req.params.companyId);
+    loggingSystem.addToLog("gameEnginerModule.js: Get sweepstake");
+    loggingSystem.addToLog("gameEnginerModule.js:The company id " + req.params.companyId);
     try {
-      var checker = check(req.params.companyId).len(24).isHexadecimal();   
+      var checker = check(req.params.companyId).len(24).isHexadecimal();
+      loggingSystem.addToLog("gameEnginerModule.js: The checker : " + checker);   
       console.log("The checker : " + checker);
-    }catch (e) {
+    } catch (e) {
+      loggingSystem.addToLog("gameEnginerModule.js: Error: " + e.message);
       console.log(e.message); //Please enter a valid integer
       res.send("There was a problem with the userID");
       db.close();
@@ -482,13 +439,22 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     }
 
     db.open(function (error, client) {
-      if (error) throw error;
+      if (error){
+        loggingSystem.addToLog('gameEngineerModule.js: Db open failed.'); 
+        throw error;
+      } 
       var company = new mongodb.Collection(client, 'companies');  
+      loggingSystem.addToLog('gameEngineerModule.js: So far so good.'); 
       console.log("So far so good");    
       company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, object) {
-        if (err) console.warn(err.message);
+        if (err) {
+          loggingSystem.addToLog('gameEngineerModule.js: Company Read unsuccessful.'); 
+          console.warn(err.message);
+        } 
+        loggingSystem.addToLog('gameEngineerModule.js: Moment of truth.'); 
         console.log("Moment of truth");          
         if (object) {
+          loggingSystem.addToLog('gameEngineerModule.js: we have a result.'); 
           // we have a result
           console.log("we have a result");  
           //send the response to the client
@@ -496,6 +462,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           db.close() 
           return;    
         } else {
+          loggingSystem.addToLog('gameEngineerModule.js: no result returned.'); 
           console.log("no result returned");
           //send the response to the client
           res.send(object);
@@ -506,12 +473,16 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   });
   
   app.get('/getCompanyAndUser/:companyId/:userId', function(req, res) {  
+    loggingSystem.addToLog('gameEngineerModule.js: Get sweepstake.'); 
+    loggingSystem.addToLog('gameEngineerModule.js: The company id ' + req.params.companyId); 
     console.log("Get sweepstake");
     console.log("The company id " + req.params.companyId);
     try {
       var checker = check(req.params.companyId).len(24).isHexadecimal();   
+      loggingSystem.addToLog('gameEngineerModule.js: The checker : ' + checker); 
       console.log("The checker : " + checker);
-    }catch (e) {
+    } catch (e) {
+      loggingSystem.addToLog('gameEngineerModule.js: Error: ' + e.message); 
       console.log(e.message); //Please enter a valid integer
       res.send("There was a problem with the userID");
       db.close();
@@ -520,18 +491,24 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     }
     
     db.open(function (error, client) {
-      if (error) throw error;
+      if (error) {
+        loggingSystem.addToLog('gameEngineerModule.js: Db open failed. '); 
+        throw error;
+      } 
       var companiesMongo = new mongodb.Collection(client, 'companies');  
-      var usersMongo = new mongodb.Collection(client, 'users');      
+      var usersMongo = new mongodb.Collection(client, 'users'); 
+      loggingSystem.addToLog('gameEngineerModule.js: So far so good. ');      
       console.log("So far so good");    
       
       companiesMongo.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, companyObj) {
         if(!err) {
           if (companyObj) {
+            loggingSystem.addToLog('gameEngineModule.js: I have the comp object.');
             console.log("I have the comp object");
             usersMongo.findOne({_id: new ObjectID(req.params.userId)}, {safe:false}, function(err, userObj) {
               if(!err) {
                 if(userObj) {
+                  loggingSystem.addToLog('gameEngineModule.js: I have the user obj.');
                   console.log("I have the user obj");
                   companyObj.user = userObj;    
                   console.log(companyObj);            
@@ -541,7 +518,8 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               db.close();
             });
           }
-        }else { 
+        } else { 
+          loggingSystem.addToLog('gameEngineModule.js: Company Read Unsuccessful.');
           db.close();  
           res.send("There was an error, dude.");
         }
@@ -551,41 +529,47 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   
   app.get('/removeFulfillmentObject/:companyId/:userId', function(req, res) {  
     db.open(function (error, client) {
-      if (error) throw error;
+      if (error) {
+        loggingSystem.addToLog('gameEngineModule.js: Db open failed.');
+        throw error;
+      } 
       
       var usersMongo = new mongodb.Collection(client, 'users');
       
       usersMongo.update({ _id : new ObjectID(req.params.userId), "fulfillments.companyId": { $in : [req.params.companyId]}},{ $pull: { "fulfillments": {"companyId" : req.params.companyId}}} , {safe:false}, function(err, userObj) {
         if(!err) {
           if(userObj) {
+            loggingSystem.addToLog('gameEngineModule.js: I have the user obj.');
             console.log("I have the user obj");
             companyObj.user = userObj;    
             console.log(companyObj);            
           }
-          usersMongo.update({_id : new ObjectID(req.params.userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
-            console.log("contest object added count " + JSON.stringify(object));
-            res.send("Fulfillment flag removed and participation count set to 0");
-            db.close();           
-          });
         }
+        res.send("Fulfillment flag removed");
+        db.close();
       });
     });
   });
   
   app.get('/getReward/:companyId/:userId', function(req, res) {  
     db.open(function (error, client) {
-      if (error) throw error;
-      
+      if (error) {
+        loggingSystem.addToLog('gameEngineModule.js: Db open failed.');
+        throw error;
+      } 
+
       var usersMongo = new mongodb.Collection(client, 'users');
       
       usersMongo.findOne({ _id : new ObjectID(req.params.userId), "rewards.companyId": { $in : [req.params.companyId]}}, {safe:false}, function(err, userObj) {
         var isWinner;
         if(!err) {
           if(userObj) {
+            loggingSystem.addToLog('gameEngineModule.js: WINNER - YES.');
             console.log("YES");          
             console.log("YES" + userObj);
             isWinner = "YES"
           } else {
+            loggingSystem.addToLog('gameEngineModule.js: WINNER - NO.');
             isWinner = "NO"
             console.log("NO" + userObj);
           }
@@ -596,28 +580,28 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     });
   });
   
-  app.get('/checkPassword/:companyId/:userId/:password', function(req, res) {  
+  app.get('/checkPassword/:companyId/:password', function(req, res) {  
     db.open(function (error, client) {
-      if (error) throw error;
-      
+      if (error) {
+        loggingSystem.addToLog('gameEngineModule.js: Db open failed.');
+        throw error;
+      } 
+
       var companiesMongo = new mongodb.Collection(client, 'companies');
-      var usersMongo = new mongodb.Collection(client, 'users');
       
       companiesMongo.findOne({ _id : new ObjectID(req.params.companyId)}, {safe:false}, function(err, compObj) {
         if(!err) {
           if(compObj) {
             if(req.params.password == compObj.contest.password) {
-
-              usersMongo.update({_id : new ObjectID(req.params.userId)}, {$pull : {"rewards" : {"companyId" : req.params.companyId}}}, function(err, object) {                 
-                 db.close();           
-                 res.send("valid");
-               });
-            }else {
-              db.close();                            
+              loggingSystem.addToLog('gameEngineModule.js: Password valid.');
+              res.send("valid");
+            } else {
+              loggingSystem.addToLog('gameEngineModule.js: Password invalid.');
               res.send("invalid");
             }
           }
         }
+        db.close();
       });
     });
   });

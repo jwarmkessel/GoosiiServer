@@ -6,7 +6,11 @@ var express = require('express')
     ,keyPem = fs.readFileSync('GoosiiKey-noenc.pem', encoding='ascii')
     ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
     ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
+    ,loggingSystem = require('./loggingSystem.js') // 11/05/2013 by MC
     ,http = require('http');
+
+
+loggingSystem.addToLog('determine_winner_script.js: loaded DWS.');
 
 var check = require('validator').check,
   sanitize = require('validator').sanitize
@@ -71,6 +75,7 @@ geoSpatialModule.geoSpatialModuleHandler(app);
 
 //Start the http server listening on port 3000
 app.listen(3005);
+loggingSystem.addToLog('determine_winner_script.js: Determine_winner_script Listening on 3005.');
 console.log('Determine_winner_script Listening on 3005');
 
 //TODO remove mongojs from node_modules as it doesn't give me the option to use the GridStore object
