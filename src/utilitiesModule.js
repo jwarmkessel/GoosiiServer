@@ -1,6 +1,5 @@
 var moment = require('moment');
 var time = require('time');
-var loggingSystem = require('./loggingSystem.js'); // 11/05/2013 by MC
 
 var getCurrentUtcTimestamp = function() {
   var now = new Date;
@@ -42,13 +41,9 @@ var getAtCommandFormattedDate = function(dateInMilliseconds) {
 };
 
 var timeConverter = function(utcTimestamp){
-  loggingSystem.addToLog('utilitiesModule.js: The timeConverter function received ' + utcTimestamp);
-  loggingSystem.addToLog('utilitiesModule.js: is moment an obj ' + moment);
   console.log("The timeConverter function received " + utcTimestamp);
   console.log("is moment an obj " + moment);
   var date = moment.utc(utcTimestamp);
-
-  loggingSystem.addToLog('utilitiesModule.js: the date ' + date.isValid());
   console.log("the date " + date.isValid());
   //var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   

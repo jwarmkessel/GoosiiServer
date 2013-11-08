@@ -3,7 +3,6 @@ var usersModuleHandler = function(app, dbName) {
   
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
-    ,loggingSystem = require('./loggingSystem.js'); // 11/05/2013 by MC
     
   //Native mongodb
   var mongodb = require('mongodb');
@@ -18,6 +17,8 @@ var usersModuleHandler = function(app, dbName) {
   utilitiesModule.getCurrentUtcTimestamp();
   
   app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
+    
+    console.log("starting createUser with userIdentifier " + req.params.userIdentifier);
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 
@@ -41,16 +42,12 @@ var usersModuleHandler = function(app, dbName) {
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); loggingSystem.addToLog('usersModule.js: Db open failed.');throw error};
+      if (error) {console.log("Db open failed"); throw error};
       var collection = new mongodb.Collection(client, 'users');
       collection.insert(newUserObject, {safe:true}, function(err, object) {
-        if (err) {
-          loggingSystem.addToLog('usersModule.js: Users Insert Failed.');
-          console.warn(err.message);
-        }
+        if (err) console.warn(err.message);
         if (err && err.message.indexOf('E11000 ') !== -1) {
           // this _id was already inserted in the database
-          loggingSystem.addToLog('usersModule.js: Users Insert: ID already inserted.');
         }
 
         db.close();
@@ -63,19 +60,14 @@ var usersModuleHandler = function(app, dbName) {
   //Also updates the lastlogin.
   app.get('/loginUser/:userId/:pushIdentifier', function(req, res) {
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
-    loggingSystem.addToLog('usersModule.js: Logging in: ' + req.params.userId + ' with pushIdentifier ' + req.params.pushIdentifier);
     console.log("Logging in: " + req.params.userId + " with pushIdentifier " + req.params.pushIdentifier);
     db.open(function (error, client) {
-      if (error){
-        loggingSystem.addToLog('usersModule.js: Db open failed.');
-        throw error;  
-      }   
+      if (error) throw error;    
       //validate the id string.
       try {
         var checker = check(req.params.userId).len(24).isHexadecimal();   
       }catch (e) {
         db.close();
-        loggingSystem.addToLog('usersModule.js: There was a problem with the userID.');
         res.send("There was a problem with the userID");        
         console.log(e.message);
         
@@ -95,11 +87,9 @@ var usersModuleHandler = function(app, dbName) {
             console.log(JSON.stringify(object));
           }
         } else {
-          loggingSystem.addToLog('usersModule.js: Users update failed.');
           console.warn(err.message);
         }
         db.close();
-        loggingSystem.addToLog('usersModule.js: Login successful.');
         res.send("login successful");        
       });
     });
@@ -108,16 +98,12 @@ var usersModuleHandler = function(app, dbName) {
   app.get('/getUserFulfillments/:userId/:companyId', function(req, res) {
     console.log("getUser() for: http://www.goosii.com:3001/getUserFulfillments/" + req.params.userId + "/" + req.params.companyId);
     db.open(function (error, client) {
-      if (error){
-        loggingSystem.addToLog('usersModule.js: Db open failed.');
-        throw error;
-      }    
+      if (error) throw error;    
       //validate the id string.
       try {
         var checker = check(req.params.userId).len(24).isHexadecimal();   
       }catch (e) {
         db.close();
-        loggingSystem.addToLog('usersModule.js: There was a problem with the userID.');
         res.send("There was a problem with the userID");        
         console.log(e.message);
         
@@ -131,17 +117,14 @@ var usersModuleHandler = function(app, dbName) {
       usersMongo.findOne({ "fulfillments.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, function(err, object) {
         if(!err) {
           if(object) {
-            loggingSystem.addToLog('usersModule.js: Object is not null.');
             console.log("Object is not null");            
             console.log(JSON.stringify(object));
             res.send(object.fulfillments[0]);
           } else if(object == null) {
-            loggingSystem.addToLog('usersModule.js: Object is null.');
             console.log("Object is null");
             res.send(null);
           }
         } else {
-          loggingSystem.addToLog('usersModule.js: Error occurred ' + err);
           console.warn("Error occurred " + err);
           res.send();
         }
@@ -152,11 +135,9 @@ var usersModuleHandler = function(app, dbName) {
 
   //Query and return the company objects for all the events the user is participating in. 
   app.get('/getUserContests/:userId', function(req, res) {
-    loggingSystem.addToLog('usersModule.js: getUserContests called by user ' + req.params.userId);
     console.log("getUserContests called by user " + req.params.userId);
     //The array of company id's to query in companies.
     var companyObjArray = new Array();
-    var singleCompanyArray = new Array();
     
     var numOfEvents = 0;
     db.open(function (error, client) {    
@@ -167,7 +148,6 @@ var usersModuleHandler = function(app, dbName) {
           
           //Get the array of companyId's and build the list of company objects to query for.
           for(var key in userObj.contests) { 
-            loggingSystem.addToLog('usersModule.js: companyId being added to query ' + userObj.contests[key].companyId);
             console.log("companyId being added to query " + userObj.contests[key].companyId);           
             var companyObjectId = new ObjectID(userObj.contests[key].companyId);
             companyObjArray.push(companyObjectId);
@@ -180,9 +160,11 @@ var usersModuleHandler = function(app, dbName) {
           companiesMongo.find({"_id": {$in : companyObjArray }}).toArray(function(err, companyObj) {
             if(!err) {
               //Now that I have the list of company objects I can pass it back and modify the order here 
-              loggingSystem.addToLog('usersModule.js: Sending client these company objects ' + JSON.stringify(companyObj));
               console.log("Sending client these company objects " + JSON.stringify(companyObj));
-              res.send(companyObj);
+              userContestObj = {};
+              userContestObj.contests = companyObj;
+              userContestObj.userObject = userObj;
+              res.send(userContestObj);
               db.close();              
             }
           });
@@ -203,7 +185,6 @@ var usersModuleHandler = function(app, dbName) {
           //Push an entry onto the company object.
           companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push : {"entryList" : req.params.userId }}, function(err, companyObj) {
             if(!err) {
-              loggingSystem.addToLog('usersModule.js: Participation complete.');
               res.send("Participation complete");
             }
             
@@ -212,7 +193,6 @@ var usersModuleHandler = function(app, dbName) {
           });
         } else {
          db.close();
-         loggingSystem.addToLog('usersModule.js: There was an error in adding user participation.');
          res.send("There was an error in adding user participation"); 
         }
       });
