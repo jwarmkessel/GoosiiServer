@@ -2,7 +2,9 @@ var geoSpatialModuleHandler = function(app, dbName) {
 	console.log("geoSpatialmodule loaded");
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
+    ,loggingSystem = require('./loggingSystem.js'); // 11/05/2013 by MC
     
+  loggingSystem.addToLog('geoSpatialModule.js: loaded gSM.');
   //Native mongodb
   var mongodb = require('mongodb');
   var ObjectID = require('mongodb').ObjectID;
@@ -16,28 +18,36 @@ var geoSpatialModuleHandler = function(app, dbName) {
   utilitiesModule.getCurrentUtcTimestamp();
   
   var nearbyCompaniesRecursive = function(userId, companiesArray, count, res) {
+    loggingSystem.addToLog('geoSpatialModule.js: nearbyCompaniesRecursive().');
+    loggingSystem.addToLog('geoSpatialModule.js: db.open().');
     console.log("nearbyCompaniesRecursive()");
 
     console.log("db.open()");
     db.open(function (error, client) {
       var usersMongo = new mongodb.Collection(client, 'users');
       
+      loggingSystem.addToLog('geoSpatialModule.js: query database.');
       console.log("query database");
       usersMongo.findOne({ _id : new ObjectID(userId)}, function(err, userObj) {
-        if(!err) {          
+        if(!err) {
+          loggingSystem.addToLog('geoSpatialModule.js: Create super company/user object.'); 
+          loggingSystem.addToLog('geoSpatialModule.js: ' + companiesArray[count-1]);          
           console.log("Create super company/user object");
           console.log(companiesArray[count-1]);
           companiesArray[count-1].user = userObj
         }
         
         if(count == 1) {
+          loggingSystem.addToLog('geoSpatialModule.js: Finish recursive method and respond.'); 
           console.log("Finish recursive method and respond");
           res.send(companiesArray);
+          loggingSystem.addToLog('geoSpatialModule.js: close db.'); 
           console.log("close db");
           db.close();
           
           return;
         }
+        loggingSystem.addToLog('geoSpatialModule.js: close db.'); 
         console.log("close db");
         db.close();
         nearbyCompaniesRecursive(userId, companiesArray, count-1, res);
@@ -49,12 +59,15 @@ var geoSpatialModuleHandler = function(app, dbName) {
   //This doesn't actually get the closest companies. It gets EVERY SINGLE company.
   //TODO setup geo-spatial queries
   app.get('/nearbyCompanies/:userId', function(req, res) {
+    loggingSystem.addToLog('geoSpatialModule.js: nearbyCompanies request.'); 
     console.log("nearbyCompanies request");
 
+    loggingSystem.addToLog('geoSpatialModule.js: open db.'); 
     console.log("open db");
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if (error) {console.log("Db open failed"); loggingSystem.addToLog('geoSpatialModule.js: Db open failed.');throw error};
       var company = new mongodb.Collection(client, 'companies');
+      loggingSystem.addToLog('geoSpatialModule.js: query db.'); 
       console.log("query db");
       company.find().toArray(function(err, results) {
         if(!err) {
@@ -62,6 +75,7 @@ var geoSpatialModuleHandler = function(app, dbName) {
            res.send(); 
           }
         }
+        loggingSystem.addToLog('geoSpatialModule.js: close db.'); 
         console.log("close db");
         db.close();
         nearbyCompaniesRecursive(req.params.userId, results, results.length, res);
@@ -70,28 +84,6 @@ var geoSpatialModuleHandler = function(app, dbName) {
   });
   
   
-  app.get('/testGeoSpatialQuery/:userId/:longitude/:latitude', function(req, res) {
-    console.log("nearbyCompanies request");
-
-    console.log("open db");
-    console.log("Long: "+ req.params.longitude + " Lat: "+ req.params.latitude);
-    //db.runCommand( { geoNear : "companies" , near : [-122.015041, 37.324044], num : 10, spherical: true });
-    db.command( { geoNear : "companies" , near : [parseFloat(req.params.longitude), parseFloat(req.params.latitude)], num : 10, spherical: true }, function(err, results){
-      
-      db.open(function (error, client) {
-        var usersMongo = new mongodb.Collection(client, 'users');
-
-        console.log("query database");
-        usersMongo.findOne({ _id : new ObjectID(req.params.userId)}, function(err, userObj) {
-        results.userObject = userObj;
-        console.log("success");
-        db.close();
-        res.send(results);  
-        });
-      });  
-    });
-  });
-
   
 };
 

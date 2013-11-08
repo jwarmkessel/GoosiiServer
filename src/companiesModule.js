@@ -3,7 +3,7 @@ var companiesModuleHandler = function(app, dbName) {
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
     ,loggingSystem = require('./loggingSystem.js'); // 11/05/2013 by MC
-    
+
   //Native mongodb objects
   var mongodb = require('mongodb');
   var ObjectID = require('mongodb').ObjectID;
@@ -34,27 +34,8 @@ var companiesModuleHandler = function(app, dbName) {
   //Import Utilities Module
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
+
   
-  app.get('/getComp/:companyId',function  (req,res,next) {
-    res.type('application/json');
-    console.log(req.params.companyId);
-    //insert the user document object into the collection
-    db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
-
-      var company = new mongodb.Collection(client, 'companies');
-
-      company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, object) {
-        console.log("The object " + object);
-        if (err) console.warn(err.message);
-        if (err && err.message.indexOf('E11000 ') !== -1) {
-          // this _id was already inserted in the database
-        }
-        res.jsonp(object);
-        db.close();
-      });
-    });      
-  });
   
   app.get('/testTime', function(req, res) {
     console.log(utilitiesModule.getCurrentUtcTimestamp());
@@ -62,7 +43,6 @@ var companiesModuleHandler = function(app, dbName) {
     loggingSystem.addToLog('companiesModule.js: test time returning ' + atCommandDate);
     console.log("test time returning " +atCommandDate);
     res.send(atCommandDate);
-    
   });
       
   app.get('/getCurrentTime', function(req, res) {
@@ -94,21 +74,28 @@ var companiesModuleHandler = function(app, dbName) {
     var offSetHours = timeOffset.getHours()
     
     console.log("Default hours " + offSetHours);
+    loggingSystem.addToLog('companiesModule.js: Default hours ' + offSetHours);
     
     var timeInMilliseconds = d.getTime();    
+    loggingSystem.addToLog('companiesModule.js: Original time ' + timeInMilliseconds);
     console.log("Original time " + timeInMilliseconds);
     var utcHour = d.getHours();
+    loggingSystem.addToLog('companiesModule.js: Hours ' + utcHour);
     console.log("Hours " + utcHour);
 
     timeOffset.setTimezone('US/Pacific');
     offSetHours = timeOffset.getHours();
+    loggingSystem.addToLog('companiesModule.js: America/Los_Angeles Time zone ' + offSetHours);
     console.log("America/Los_Angeles Time zone " + offSetHours);
     
     var pacificTimeOffset = 7;
+    loggingSystem.addToLog('companiesModule.js: The hour offset ' + pacificTimeOffset);
     console.log("The hour offset " + pacificTimeOffset);
     pacificTimeOffset = pacificTimeOffset * 3600000;
+    loggingSystem.addToLog('companiesModule.js: offset in milliseconds ' + pacificTimeOffset);
     console.log("offset in milliseconds " + pacificTimeOffset);
     timeInMilliseconds = timeInMilliseconds + pacificTimeOffset;
+    loggingSystem.addToLog('companiesModule.js: Created object ' + timeInMilliseconds);
     console.log("Created object " + timeInMilliseconds);
 
     res.send(timeInMilliseconds.toString());
@@ -151,21 +138,15 @@ var companiesModuleHandler = function(app, dbName) {
   */
     
   app.get('/createCompany/:companyInfo', function(req, res) {
-
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 
     var companyObject =   {
-                            "name" : "Goosii",
-     	                      "address" : "767 Chopin Drive, Sunnyvale, CA 94087",
-                          	"location" : {
-                          		"type" : "Point",
-                          		"coordinates" : [
-                          			-121.89409,
-                          			37.383613
-                          		]
-                          	},
-     	                      "telephone" : "4086054692",
+                            "name" : "",
+     	                      "address" : "",
+     	                      "longitude" : "",
+     	                      "latitude" : "",
+     	                      "telephone" : "",
      	                      "contest" : {
      		                                  "startDate" : "",
      		                                  "endDate" : "",
@@ -178,14 +159,19 @@ var companiesModuleHandler = function(app, dbName) {
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if (error) {console.log("Db open failed"); 
+                  loggingSystem.addToLog('companiesModule.js: Db open failed.');  throw error};
       var companies = new mongodb.Collection(client, 'companies');
 
       companies.insert(companyObject, {safe:true}, function(err, object) {
         console.log("The object " + object);
-        if (err) console.warn(err.message);
+        if (err) {
+          loggingSystem.addToLog('companiesModule.js: Companies Insert Failed.');
+          console.warn(err.message);
+        } 
         if (err && err.message.indexOf('E11000 ') !== -1) {
           // this _id was already inserted in the database
+          loggingSystem.addToLog('companiesModule.js: Companies Insert: ID already inserted.');
         }
         console.log("Sending id back " + object[0]._id);
         res.send(JSON.stringify(object[0]._id));
@@ -196,20 +182,24 @@ var companiesModuleHandler = function(app, dbName) {
 
   //Get a company object using the "_id".
   app.get('/getCompany/:companyId', function(req, res) {
-    var utc_timestamp = getCurrentUtcTimestamp();
+    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if (error) {console.log("Db open failed"); loggingSystem.addToLog('companiesModule.js: Db open failed.'); throw error};
 
       var company = new mongodb.Collection(client, 'companies');
 
       company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, object) {
         console.log("The object " + object);
-        if (err) console.warn(err.message);
+        if (err){
+          loggingSystem.addToLog('companiesModule.js: Companies Read Failed.');
+          console.warn(err.message);
+        } 
         if (err && err.message.indexOf('E11000 ') !== -1) {
           // this _id was already inserted in the database
         }
+        loggingSystem.addToLog('companiesModule.js: Companies Read Successful.');
         res.send(object);
         db.close();
       });
