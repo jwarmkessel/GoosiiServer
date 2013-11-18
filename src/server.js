@@ -45,14 +45,12 @@ var formidable = require('formidable');
 //Native mongodb
 var mongodb = require('mongodb');
 var ObjectID = require('mongodb').ObjectID;
-var server = new mongodb.Server('127.0.0.1', 27017, {auto_reconnect: true, safe:true});
+var server = new mongodb.Server('127.0.0.1', 27017, {safe:true});
+//var server = new mongodb.Server('127.0.0.1', 27017, {auto_reconnect: true, safe:true});
 var db = new mongodb.Db(dbName, server);   
 var GridStore = require('mongodb').GridStore;
 var assert = require('assert');
 var Binary = require('mongodb').Binary;
-
-//Stephen's rollingLogAppender
-var rollingLogAppender = require('../utilities/RollingLogAppender');
 
 //Gridform is npm node module used to easily upload files from the client into mongodb using mongodb's gridstore object
 var gridform = require('gridform');    

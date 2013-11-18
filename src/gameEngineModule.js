@@ -95,7 +95,36 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
       });
     });
   };
-    
+  
+  app.get('/updateEvent/:companyId/:eventObject', function(req, res) {
+    var eventObj = JSON.parse(req.params.eventObject);
+    console.log(eventObj.participationPost);
+    var contestObj = {"contest" : 
+                        { "startDate" : eventObj.startDate,
+                            "endDate" : eventObj.endDate, 
+                              "prize" : eventObj.prize, 
+                           "prizeImg" : eventObj.prizeImg,
+              "mobileBackgroundImage" : eventObj.mobileBackgroundImage,                           
+                  "participationPost" : eventObj.participationPost,
+                               "post" : eventObj.post,                  
+                           "password" : eventObj.password,
+                            "website" : eventObj.website
+                        }
+                     };
+                     
+    //insert the user document object into the collection
+    db.open(function (error, client) {
+      if (error) {console.log("Db open failed"); throw error};
+      
+      var companiesMongo = new mongodb.Collection(client, 'companies');
+      
+      companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : contestObj}, {safe:true}, function(err, object) {
+        if (err) console.warn(err.message);
+        db.close();
+      });
+    });
+  });
+  
   app.get('/createContest/:companyId/:eventObj', function(req, res) {
     //var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
     var eventObject = JSON.parse(req.params.eventObj);
