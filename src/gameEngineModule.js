@@ -98,19 +98,8 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   
   app.get('/updateEvent/:companyId/:eventObject', function(req, res) {
     var eventObj = JSON.parse(req.params.eventObject);
-    console.log(eventObj.participationPost);
-    var contestObj = {"contest" : 
-                        { "startDate" : eventObj.startDate,
-                            "endDate" : eventObj.endDate, 
-                              "prize" : eventObj.prize, 
-                           "prizeImg" : eventObj.prizeImg,
-              "mobileBackgroundImage" : eventObj.mobileBackgroundImage,                           
-                  "participationPost" : eventObj.participationPost,
-                               "post" : eventObj.post,                  
-                           "password" : eventObj.password,
-                            "website" : eventObj.website
-                        }
-                     };
+
+    var contestObj = {"contest" : eventObj };
                      
     //insert the user document object into the collection
     db.open(function (error, client) {
@@ -294,6 +283,10 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               console.log(winnerId);
               companyObj.contest.companyId = companyId;
               console.log("Adding this contest " + JSON.stringify(companyObj.contest));
+              
+              //Set the fulfillment flag
+              companyObj.contest.fulfillment = 1;
+              
               usersMongo.update({_id: new ObjectID(winnerId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
                 if(!err) {
                  console.log("Winner has been set");
@@ -431,8 +424,9 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     db.open(function (error, client) {
       if (error) {throw error;}    
 
-      var usersMongo = new mongodb.Collection(client, 'users');
+      var usersMongo = new mongodb.Collection(client, 'users');   
       var isCheckedIn = 0;
+      
       //find the single users object.
       usersMongo.findOne({_id: new ObjectID(req.params.userId)}, function(err, userObject) {
         if(err){ return false };
@@ -449,7 +443,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           {
             //If the companyID is present within the users list of contests then we know the user has already checked into this event.
             if(userObject.contests[key].companyId == req.params.companyId) {
-              
+              console.log("set 'entered' flag to yes");
               //Set a flag to indicate that the user is already checked in.
               isCheckedIn = 1;
               db.close();  
@@ -474,9 +468,9 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           addToParticipantsObj = {"userId" : req.params.userId, "pushIdentifier" : userObject.pushIdentifier};
           
           //Push this object into the array of participants.
-          companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$push: {"participants" : addToParticipantsObj}}, {safe:true}, function(err, result) {                        
+          companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$addToSet: {"participants" : addToParticipantsObj}}, {safe:true}, function(err, result) {                        
             if(!err) {
-              usersMongo.update({_id: new ObjectID(req.params.userId)}, {$push: {"contests" : {"companyId" :req.params.companyId, "participationCount" : 1}}}, {safe:true}, function(err, userObject) {
+              usersMongo.update({_id: new ObjectID(req.params.userId)}, {$addToSet: {"contests" : {"companyId" :req.params.companyId, "participationCount" : 0}}}, {safe:true}, function(err, userObject) {
                 if(!err) {
                   companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(err, userObject) {
                     if(!err) {
@@ -484,6 +478,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
                     } else {
                       console.log("Error " + JSON.stringify(err));
                     }
+                    
                     //Close the database.
                     db.close();
                   });                 
@@ -491,6 +486,8 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               });
             }
           });  
+        } else {
+          console.log("Already entered so let's do nothing");
         }
       });
     });
@@ -591,10 +588,15 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
             companyObj.user = userObj;    
             console.log(companyObj);            
           }
-          usersMongo.update({_id : new ObjectID(req.params.userId)}, {$push : {"contests" : {"companyId" : event._id.toString(), "participationCount" : 0}}}, function(err, object) {                
+          usersMongo.update({_id : new ObjectID(req.params.userId)}, {$push : {"contests" : {"companyId" : req.params.companyId, "participationCount" : 0}}}, function(err, object) {                
             console.log("contest object added count " + JSON.stringify(object));
-            res.send("Fulfillment flag removed and participation count set to 0");
-            db.close();           
+
+            //Remove the fulfillment flag if there is one.
+            usersMongo.update({"rewards.companyId": { $in : [ req.params.companyId ] } , _id : new ObjectID(req.params.userId)}, {$inc: {"rewards.$.fulfillment": -1}}, function(err, object) {
+              console.log("contest object added count " + JSON.stringify(object));
+              res.send("Fulfillment flag removed and participation count set to 0");
+              db.close();           
+            });
           });
         }
       });
