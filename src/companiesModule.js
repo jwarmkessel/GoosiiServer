@@ -196,7 +196,6 @@ var companiesModuleHandler = function(app, dbName) {
 
   //Get a company object using the "_id".
   app.get('/getCompany/:companyId', function(req, res) {
-    var utc_timestamp = getCurrentUtcTimestamp();
 
     //insert the user document object into the collection
     db.open(function (error, client) {

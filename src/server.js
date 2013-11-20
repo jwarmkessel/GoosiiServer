@@ -62,98 +62,11 @@ gridform.mongo = mongodb;
 //Easily create an http server using express
 var app = express();
 
-app.configure(function(){
-    app.use(express.bodyParser());
-    app.use(express.methodOverride());
-    app.use(app.router);
-    // app.use(express.static(__dirname + '/public'));
-});
-
-app.all('/', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With");
-  next();
- });
-
- app.use(function(req, res, next) {
-   res.header("Access-Control-Allow-Origin", "*");
-   
-   // Request headers you wish to allow
-    res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-   // res.header("Access-Control-Allow-Headers", "X-Requested-With");
-  
-  
-  
-   // Request methods you wish to allow
-   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-
-   
-
-   // Set to true if you need the website to include cookies in the requests sent
-   // to the API (e.g. in case you use sessions)
-   //res.setHeader('Access-Control-Allow-Credentials', true);
-   
-   next();
- });
- 
 app.get('/', function(req, res, next) {
   // Handle the get for this route
   res.send("Server okay");
 });
 
-
-app.post('/test', express.bodyParser(), function (req, res) {
-  res.header("Access-Control-Allow-Origin", "*");
-  
-  // Request headers you wish to allow
-   res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-  // res.header("Access-Control-Allow-Headers", "X-Requested-With");
- 
-  // Request methods you wish to allow
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  console.log("got post");
-  console.log(req.body);
-  console.log(req.files);
-  
-  fs.readFile(req.files.uploadingFile.path, function (err, data) {
-    console.log("File Path: /root/justin/companyAssets/" + req.body.companyId + "/" +  req.body.imageIsFor);
-    fs.writeFile("/root/justin/companyAssets/" + req.body.companyId + "/" +  req.body.imageIsFor, data, function (err) {
-      //res.redirect("back");
-      if(err) {
-          console.log(err);
-      } else {
-          console.log("The file was saved!");
-      }
-      
-    });
-  });
-  
-  // var uploadedFile = req.files.uploadingFile;
-  
-  
-  // var tmpPath = uploadedFile.path;
-  // var targetPath = './uploads/' + uploadedFile.name;
-  // req.files.uploadingFile.path = './uploads/' + uploadedFile.name;
-  // 
-  // fs.rename(tmpPath, targetPath, function(err) {
-  //   //if (err) throw err;
-  //   
-  //   fs.unlink(tmpPath, function(err) {
-  //       if (err) throw err;
-  //         res.jsonp("cool");
-  //           //res.jsonp('File Uploaded to ' + targetPath + ' - ' + uploadedFile.size + ' bytes');
-  //       });
-  // });
-  
-  //req.body is your array of objects now:
-  // [{id:134123, url:'www.qwer.com'},{id:131211,url:'www.asdf.com'}]
-});
-
-// app.get('/test123', function(req, res){
-//   throw 'test123'
-// });
-
-// loggingSystem.addToLog('Program Entered'); // 10/10/2013 by MC
 
 // //import Goosii Modules
 var pushNotifyModule = require('./pushNotifyModule.js');
@@ -178,6 +91,77 @@ yourCompanyWebsiteModule.yourCompanyWebsiteModuleHandler(app, dbName, serverType
 app.listen(port);
 console.log(serverType + ' server is Listening on port ' + port);
 
+// PRETTY SURE I DON'T NEED ...
+// app.configure(function(){
+//     app.use(express.bodyParser());
+//     app.use(express.methodOverride());
+//     app.use(app.router);
+//     // app.use(express.static(__dirname + '/public'));
+// });
+// 
+// app.all('/', function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header("Access-Control-Allow-Headers", "X-Requested-With");
+//   next();
+//  });
+// 
+//  app.use(function(req, res, next) {
+//    res.header("Access-Control-Allow-Origin", "*");
+//    
+//    // Request headers you wish to allow
+//     res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+//    // res.header("Access-Control-Allow-Headers", "X-Requested-With");
+//   
+//   
+//   
+//    // Request methods you wish to allow
+//    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+// 
+//    
+// 
+//    // Set to true if you need the website to include cookies in the requests sent
+//    // to the API (e.g. in case you use sessions)
+//    //res.setHeader('Access-Control-Allow-Credentials', true);
+//    
+//    next();
+//  });
+ // .... THIS
+
+
+// PRETTY SURE I DON'T NEED ...
+// app.post('/test', express.bodyParser(), function (req, res) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   
+//   // Request headers you wish to allow
+//    res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+//   // res.header("Access-Control-Allow-Headers", "X-Requested-With");
+//  
+//   // Request methods you wish to allow
+//   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+//   console.log("got post");
+//   console.log(req.body);
+//   console.log(req.files);
+//   
+//   fs.readFile(req.files.uploadingFile.path, function (err, data) {
+//     console.log("File Path: /root/justin/companyAssets/" + req.body.companyId + "/" +  req.body.imageIsFor);
+//     fs.writeFile("/root/justin/companyAssets/" + req.body.companyId + "/" +  req.body.imageIsFor, data, function (err) {
+//       //res.redirect("back");
+//       if(err) {
+//           console.log(err);
+//       } else {
+//           console.log("The file was saved!");
+//       }
+//       
+//     });
+//   });
+// });
+// .... THIS
+
+// app.get('/test123', function(req, res){
+//   throw 'test123'
+// });
+
+// loggingSystem.addToLog('Program Entered'); // 10/10/2013 by MC
 // if (cluster.isMaster) {
 // 
 //   console.log('start cluster with %s workers', workers);

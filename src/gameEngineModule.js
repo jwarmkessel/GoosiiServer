@@ -304,88 +304,56 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
       });
     });
   };
+
   
-  app.get('/testWinner/:companyId', function(req, res) {
-    setWinner(req.params.companyId);
-    res.send("Setting winner");
-  });
-  
-  function selectWinnerRecursive(count, participants, event) {    
+  function selectWinnerRecursive(count, participants, event, client, res) {    
     event.contest.companyId = event._id.toString();    
     console.log("selectWinnerRecursive() using " + participants[count-1].pushIdentifier);
     
-    db.open(function (error, client) {
-      var usersMongo = new mongodb.Collection(client, 'users');
-      
-      usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, function(err, object) {
-        if(!err) {          
-          if(object == null) {
-            console.log("No fulfillments object for " + event._id.toString());
+    var usersMongo = new mongodb.Collection(client, 'users');
+    
+    usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, function(err, object) {
 
-            usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-              console.log("fulFillment object added " + JSON.stringify(object));       
-              
-              usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
-                console.log("contest object deleted" + JSON.stringify(object));
-                
-                db.close();
+      usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
+        if(err){console.log("There was an error pulling");}
+        console.log("Previous fulfillment object is removed");
+        
+        usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
+          console.log("fulFillment object added " + JSON.stringify(object));
 
-              });           
-            });
-          } else {
-            console.log("First remove");
-            
-            usersMongo.update({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"fulfillments" : {"companyId" : event._id.toString()}}}, function(err, object) {                
-              if(err){console.log("There was an error pulling");}
-              console.log("Previous fulfillment object is removed");
-              
-              usersMongo.update({_id : new ObjectID(participants[count-1].userId)}, {$push :{ "fulfillments" : event.contest}}, function(err, object) {
-                console.log("fulFillment object added " + JSON.stringify(object));
-
-                usersMongo.update({ "contests.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, {$pull : {"contests" : {"companyId" : event._id.toString()}}}, function(err, object) {                
-                  console.log("contest object deleted" + JSON.stringify(object));
-                  
-                  db.close();           
-                });       
-              });
-            });
-          }
-
-          if(participants[count-1].pushIdentifier != "empty") {
+           if(participants[count-1].pushIdentifier != "empty") {
             sendPushNotification(participants[count-1].pushIdentifier, "A winner has been selected! Check out if you've won.");
           }
           
           if(count == 1) {
-            
+
             asyncblock(function (flow) {
               //TODO set this up so that it can handle multiple time zones.  
               console.log("Expiring " + event._id.toString());
-              
+
               //expire the contest after the users have had their fulfillment set.
               exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"', flow.add());
             });
-            
+
             console.log("Let's not call our recursive function again."); 
-            
+
             //Set the winner and delete the entrylist contents
             console.log("THIS IS THE FREAKING ID: "+event.contest.companyId);
             setWinner(event.contest.companyId);   
             
+            res.send("complete");
+            db.close();
             return;
+          } else {
+            count--;
+            selectWinnerRecursive(count, participants, event, client, res); 
           }
-          
-          db.close();
-          count--;
-          selectWinnerRecursive(count, participants, event);
-        }                      
-      });        
-    });
+        });
+      });                      
+    });        
   }
 
   app.get('/determineContestWinner/:companyId', function(req, res) {
-    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
-
-    //insert the user document object into the collection
     db.open(function (error, client) {
       if (error) {console.log("Db open failed"); throw error};
       
@@ -399,18 +367,13 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           db.close();
           
           var count = 0;
-          for (var key in object.participants)
-          {
+          for (var key in object.participants) {
             count++;
           }
+          
           console.log("sending selectWinnerRecursive with " + count + "\n");
           //Select winner iterates through the participants, determines a winner, and sets the fulfillment parameters in the user object. 
-          selectWinnerRecursive(count, object.participants, object);
-
-          res.send("determining winner");
-        } else {
-          res.send("No such company exists");
-          db.close();          
+          selectWinnerRecursive(count, object.participants, object, client, res);
         }
       });
     }); 

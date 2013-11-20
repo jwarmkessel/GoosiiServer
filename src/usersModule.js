@@ -174,6 +174,8 @@ var usersModuleHandler = function(app, dbName) {
   });
   
   app.get('/addUserParticipation/:userId/:companyId', function(req, res) {
+    console.log("Add user participation");
+    
     db.open(function (error, client) {    
       var usersMongo = new mongodb.Collection(client, 'users');
       var companiesMongo = new mongodb.Collection(client, 'companies');
