@@ -628,12 +628,25 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
         if(!err) {
           if(compObj) {
             if(req.params.password == compObj.contest.password) {
-              usersMongo.update({"rewards.companyId": { $in : [req.params.companyId] } , "rewards.fulfillment": { $in : [0]}, "_id" : new ObjectID(req.params.userId)}, { $unset : { "rewards.$" : ""}}, function(err, object) {
-                usersMongo.update({"_id" : new ObjectID(req.params.userId)}, { $pull : { "rewards" : null } }, function(err, object) {
-                  console.log("Check password() and removing reward " + object);
-                  db.close();            
-                  res.send("valid");  
-                });
+              usersMongo.findOne({"rewards.companyId": { $in : [req.params.companyId] } , "rewards.fulfillment": { $in : [0]}, "_id" : new ObjectID(req.params.userId)}, function(err, object) {
+                var currentRewardObject = {};
+                // console.log("THE REWARDS OBJECTS ARRAY : " + JSON.stringify(object.rewards));
+                for (var key in object.rewards) { 
+                  if(object.rewards[key].companyId == req.params.companyId) {
+                    console.log("Found my reward");
+                    currentRewardObject = object.rewards[key].prize;
+                  
+                    break;
+                  }
+                }                
+                //Remove the reward and the null object $unset leaves behind.
+                usersMongo.update({"rewards.companyId": { $in : [req.params.companyId] } , "rewards.fulfillment": { $in : [0]}, "_id" : new ObjectID(req.params.userId)}, { $unset : { "rewards.$" : ""}}, function(err, object) {
+                  usersMongo.update({"_id" : new ObjectID(req.params.userId)}, { $pull : { "rewards" : null } }, function(err, object) {
+                    console.log("THE REWARD " + currentRewardObject);
+                    db.close();            
+                    res.send(currentRewardObject);  
+                  });
+                });                
               });
             }else {
               db.close();                            
