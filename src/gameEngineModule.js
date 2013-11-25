@@ -205,7 +205,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
     });
 
     var
-        pushnd = { aps: { alert: pushMessage }, customParam: { foo: 'bar' } } // 'aps' is required
+        pushnd = { aps: { "alert": pushMessage, "badge" : 1 }} // 'aps' is required
         ,hextoken = pushIdentifier // Push token from iPhone app. 32 bytes as hexadecimal string
         ,token = hextobin(hextoken)
         ,payload = JSON.stringify(pushnd)
@@ -294,12 +294,12 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
             //Set the winner and delete the entrylist contents
             console.log("THIS IS THE FREAKING ID: "+event.contest.companyId);
             
-            companiesMongo.findOne({_id: new ObjectID(event.contest.companyId)}, function(err, companyObj) {
-              console.log("AM I even reaching here?");
-              
+            companiesMongo.findOne({_id: new ObjectID(event.contest.companyId)}, function(err, companyObj) {              
               console.log("ENTRYLIST? " + companyObj.entryList);
               console.log("participants? " + companyObj.participants);              
               
+              
+              //If the ENTRYLIST is not undefined then use this list, otherwise, use the participants list.
               if(companyObj.entryList != 'undefined') {
                 
                 console.log(JSON.stringify(companyObj));
@@ -322,22 +322,26 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
 
                   //Set the fulfillment flag
                   companyObj.contest.fulfillment = 1;
+                  
+                   usersMongo.update({ _id : new ObjectID(winnerId), "rewards.companyId": { $in : [event._id.toString()]}},{ $pull: { "rewards": {"companyId" : event._id.toString()}}} , {safe:false}, function(err, userObj) {
+                     console.log("Removing Reward Object");
+                     usersMongo.update({_id: new ObjectID(winnerId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
+                       if(!err) {
+                        console.log("Winner has been set");
 
-                  usersMongo.update({_id: new ObjectID(winnerId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
-                    if(!err) {
-                     console.log("Winner has been set");
-
-                     //Delete the contents of entryList 
-                     companiesMongo.update({_id : new ObjectID(event.contest.companyId)}, {$unset : { "entryList" : ""}}, function(err, object) {
-                       console.log("DELETING THE ENTRY LIST! " + event.contest.companyId);
-                       db.close();      
-                       res.send("complete");
-
-
+                        usersMongo.update({"fulfillments.companyId": { $in : [event._id.toString()]} , _id: new ObjectID(winnerId)}, {$set : {"fulfillments.$.reward" : 1}}, function(err, userObj) {
+                          console.log("Setting reward flag on fulfillment object.");
+                          //Delete the contents of entryList 
+                          companiesMongo.update({_id : new ObjectID(event.contest.companyId)}, {$unset : { "entryList" : ""}}, function(err, object) {
+                            console.log("DELETING THE ENTRY LIST! " + event.contest.companyId);
+                            db.close();      
+                            res.send("complete");
+                          });  
+                        });
+                       }
                      });
-                    }
-                  });
-                } else {
+                   });                    
+                }else {
                   console.log("Using Participants array to set winner");
                   var count = 0;
                   for (var key in companyObj.participants)
@@ -355,17 +359,23 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
                   //Set the fulfillment flag
                   companyObj.contest.fulfillment = 1;
                   
-                  usersMongo.update({_id: new ObjectID(winner.userId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
-                    if(!err) {
-                     console.log("Winner has been set");
+                  usersMongo.update({ _id : new ObjectID(winnerId), "rewards.companyId": { $in : [event._id.toString()]}},{ $pull: { "rewards": {"companyId" : event._id.toString()}}} , {safe:false}, function(err, userObj) {
+                    console.log("Removing Reward Object");
+                    usersMongo.update({_id: new ObjectID(winner.userId)}, {$push : {"rewards" : companyObj.contest}}, function(err, userObj) {
+                      if(!err) {
+                        console.log("Winner has been set");
 
-                     //Delete the contents of entryList 
-                     companiesMongo.update({_id : new ObjectID(companyObj.contest.companyId) }, {$unset : { "entryList" : ""}}, function(err, object) {
-                       console.log("DELETING THE ENTRY LIST! " + companyObj.contest.companyId);
-                       db.close();      
-                       res.send("complete");
-                     });
-                    }
+                        usersMongo.update({"fulfillments.companyId": { $in : [event._id.toString()]} , _id: new ObjectID(winner.userId)}, {$set : {"fulfillments.$.reward" : 1}}, function(err, userObj) {
+                          console.log("Setting reward flag on fulfillment object.");
+                          //Delete the contents of entryList 
+                          companiesMongo.update({_id : new ObjectID(companyObj.contest.companyId) }, {$unset : { "entryList" : ""}}, function(err, object) {
+                            console.log("DELETING THE ENTRY LIST! " + companyObj.contest.companyId);
+                            db.close();      
+                            res.send("complete");
+                          });                       
+                        });
+                      }
+                    });
                   });
                 }
               }
@@ -563,6 +573,27 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
       });
     });
   });
+  
+  //There are two events where the fulfillment object is removed.
+  /*
+  1. The user doesn't want to participate or fulfill and, therefore, the fulfillment flag should be removed. 
+  2. The user participates and thus has an opportunity to see if there is a reward. 
+  */
+  app.get('/removeFulfillmentAndReward/:companyId/:userId', function(req, res) {  
+    console.log("Calling removeFulfillmentAndReward()");
+    db.open(function (error, client) {
+      var usersMongo = new mongodb.Collection(client, 'users');
+      usersMongo.update({ _id : new ObjectID(req.params.userId), "fulfillments.companyId": { $in : [req.params.companyId]}},{ $pull: { "fulfillments": {"companyId" : req.params.companyId}}} , {safe:false}, function(err, userObj) {
+        console.log("Removing Fulfillment Object");
+        usersMongo.update({ _id : new ObjectID(req.params.userId), "rewards.companyId": { $in : [req.params.companyId]}},{ $pull: { "rewards": {"companyId" : req.params.companyId}}} , {safe:false}, function(err, userObj) {
+                console.log("Removing Reward Object");
+          res.send("Fulfillment flag removed and participation count set to 0");
+          db.close();
+        });  
+      });
+    });
+  });
+
   
   app.get('/removeFulfillmentObject/:companyId/:userId', function(req, res) {  
     db.open(function (error, client) {
