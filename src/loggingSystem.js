@@ -3,7 +3,7 @@ var addToLog = function(message) {
 
 	var fs = require('fs');
         
-  	var today = new Date;
+  var today = new Date;
 	var currentTime = today.getFullYear() + '-' + today.getMonth() + '-' + today.getDate() + ', ' + today.getHours() + ':' + today.getMinutes() + ':' + today.getSeconds() + ':' + today.getMilliseconds();    
 	
 	message = currentTime + ': ' + message;
