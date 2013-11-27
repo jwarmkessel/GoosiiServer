@@ -29,9 +29,8 @@ var express = require('express')
     ,check = require('validator').check
     ,sanitize = require('validator').sanitize
     ,workers = process.env.WORKERS || require('os').cpus().length // 10/10/2013 by MC
-    ,loggingSystem = require('./loggingSystem.js'); // 10/10/2013 by MC
-
-
+    ,loggingSystem = require('./loggingSystem.js') // 10/10/2013 by MC
+    ,utilitiesModule = require('./utilitiesModule.js');
 
 //Image and form uploads. I might be able to remove this since I have Gridform
 var formidable = require('formidable');
@@ -59,37 +58,66 @@ var app = express();
 //With domain-middleware
 app.use(require('express-domain-middleware'));
 app.use(app.router);
+
+var uncaughtExceptionCounter = 0;
+var uncaughtExceptionStartTime = utilitiesModule.getCurrentUtcTimestamp();
+
 app.use(function errorHandler(err, req, res, next) {
-  console.log("good idea " + err.foo);
   
-  // console.log('error on request %d %s %s: %j', process.domain.id, req.method, req.url, err);
-  // 
-  //   if(err.domain) {
-  //     //you should think about gracefully stopping & respawning your server
-  //     //since an unhandled error might put your application into an unknown state 
-  //     console.log(JSON.stringify("Something specific"));
-  //   }
-  res.send(500, "Something bad happened. :(");
-});
+  //Count the number of times an uncaught exception occurs and check the starting timestamp. 
+  //If the starting timestamp is less than 24 hours and the number of uncaught exceptions is greater than 100 then email notify me. 
+  uncaughtExceptionCounter++;
+  
+  if(uncaughtExceptionCounter == 1) {
+   //Set the starting time
+   uncaughtExceptionStartTime = utilitiesModule.getCurrentUtcTimestamp();
+   
+  } else if( uncaughtExceptionCounter > 2 && (utilitiesModule.getCurrentUtcTimestamp() - uncaughtExceptionStartTime) < 86400000) {
+    
+    var smtpTransport = nodemailer.createTransport("SMTP", {
+      service: "Gmail",
+      auth: {
+              user: "support@goosii.com",
+              pass: "goosiI52"
+            }
+    });
 
-app.get('/hi', function(req, res, next) {
-  // Handle the get for this route
-  db.open(function (error, client) {
+    console.log('Warning email firing.');
     
-    console.log("Type of " + typeof(error));
-    error = {"hello" : "hi"};
+    var mailOptions = {
+                        from: "support@goosii.com", // sender address
+                        to: "support@goosii.com", // list of receivers
+                        subject: "Too many uncaught exceptions", // Subject line
+                        text: uncaughtExceptionCounter + " uncaught exceptions detected.", // plaintext body
+                        html: "<b>" + uncaughtExceptionCounter + " uncaught exceptions detected</b>" // html body
+                      }
     
-    error.foo = "blah";
-    // if(error) throw new Error("The individual request will be passed to the express error handler, and your application will keep running.");
-    // res.send("Server okay");
+    smtpTransport.sendMail(mailOptions, function(error, response){
+      if(error){
+        console.log('error detected');
+      }else{
+        console.log("Message sent: " + response.message);
+        //Reset the uncaughtExceptionCounter to 0 and set the new uncaughtExceptionStartTime
+        uncaughtExceptionCounter = 0;
+        uncaughtExceptionStartTime = utilitiesModule.getCurrentUtcTimestamp();
+      }
+      smtpTransport.close(); // shut down the connection pool, no more messages
     
-    throw error;
-  });
-});
+    });  
+  }
+  
+  //Output error and log to SystemLog.txt
+  console.log('error on request ' + process.domain.id + ' ' + req.method + ' ' + req.url + ' ' + err.message + ' ' + err.domain + ' ' + err.domainThrown);
 
-//Start the http server listening on port 3001
-// app.listen(port);
-// console.log(serverType + ' server is Listening on port ' + port);
+  //Domain object can be dissected.
+  // console.log('Domain object ' + err.domain.domain + ' : ' + err.domain._events + ' : ' +err.domain._maxListeners + ' : ' + err.domain.members + ' : ' + err.domain.id);
+  
+  //Log error to systemLog.txt
+  loggingSystem.addToLog('UncaughtException. Error on Process: ' + process.domain.id + ' Request Type: ' + req.method + ' URL:' + req.url + ' Message:' + err.message + ' ' + Object.keys(err.domain) + ' ' + err.domainThrown);
+  
+  //Let the client know something bad happened.
+  res.send(500, "Something bad happened.");
+});
 
 //import Goosii Modules
 var pushNotifyModule = require('./pushNotifyModule.js');

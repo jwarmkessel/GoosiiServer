@@ -16,6 +16,23 @@ var usersModuleHandler = function(app, dbName) {
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
   
+  app.get('/hi', function(req, res, next) {
+    console.log("testing hi");
+    // Handle the get for this route
+    db.open(function (error, client) {
+      if(error) throw error;
+      // console.log("Type of " + typeof(error));
+      // error = {"hello" : "hi"};
+      // 
+      // 
+      // // if(error) throw new Error("The individual request will be passed to the express error handler, and your application will keep running.");
+      // // res.send("Server okay");
+      // error.message = "blah";
+
+    });
+  });
+  
+  
   app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
     
     console.log("starting createUser with userIdentifier " + req.params.userIdentifier);

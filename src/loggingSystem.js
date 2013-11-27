@@ -12,23 +12,6 @@ var addToLog = function(message) {
 	} else {
 		fs.writeFile('SystemLog.txt', message);
 	}
-	// fs.exists("SystemLog.txt", function( exists ) {
-	// 	console.log(exists);
-	// 	console.log('how far do i get' + message)
-	// 	if(exists){
-	// 		fs.appendFile('SystemLog.txt', '\n' + message, function(err){
-	// 			if(err){
-	// 				console.log('Cannot append to log.');
-	// 			}
-	// 		});
-	// 	} else {
-	// 		fs.writeFile('SystemLog.txt', message, function(err){
-	// 			if(err){
-	// 				console.log('Cannot create log.');
-	// 			}
-	// 		});	
-	// 	}       
-	// });
 
 	console.log("Log Successful");	
 }
