@@ -72,7 +72,7 @@ app.use(function errorHandler(err, req, res, next) {
    //Set the starting time
    uncaughtExceptionStartTime = utilitiesModule.getCurrentUtcTimestamp();
    
-  } else if( uncaughtExceptionCounter > 2 && (utilitiesModule.getCurrentUtcTimestamp() - uncaughtExceptionStartTime) < 86400000) {
+  } else if( uncaughtExceptionCounter > 99 && (utilitiesModule.getCurrentUtcTimestamp() - uncaughtExceptionStartTime) < 86400000) {
     
     var smtpTransport = nodemailer.createTransport("SMTP", {
       service: "Gmail",
