@@ -21,14 +21,8 @@ var usersModuleHandler = function(app, dbName) {
     // Handle the get for this route
     db.open(function (error, client) {
       if(error) throw error;
-      // console.log("Type of " + typeof(error));
-      // error = {"hello" : "hi"};
-      // 
-      // 
-      // // if(error) throw new Error("The individual request will be passed to the express error handler, and your application will keep running.");
-      // // res.send("Server okay");
-      // error.message = "blah";
 
+      res.send("hi");
     });
   });
   
@@ -59,10 +53,10 @@ var usersModuleHandler = function(app, dbName) {
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if (error) throw error;
       var collection = new mongodb.Collection(client, 'users');
       collection.insert(newUserObject, {safe:true}, function(err, object) {
-        if (err) console.warn(err.message);
+        if (err) throw error;
         if (err && err.message.indexOf('E11000 ') !== -1) {
           // this _id was already inserted in the database
         }
@@ -98,14 +92,11 @@ var usersModuleHandler = function(app, dbName) {
       userObject = {"lastlogin" : utc_timestamp, "pushIdentifier" : req.params.pushIdentifier };      
       
       //Query and update the parameters for this userId.
-      usersMongo.update({_id: new ObjectID(req.params.userId)}, {$set: userObject}, function(err, object) {
-        if(!err) {
-          if(object) {
-            console.log(JSON.stringify(object));
-          }
-        } else {
-          console.warn(err.message);
-        }
+      usersMongo.update({_id: new ObjectID(req.params.userId)}, {$set: userObject}, function(error, object) {
+        if(error) throw error;
+        
+        console.log(JSON.stringify(object));
+        
         db.close();
         res.send("login successful");        
       });
@@ -131,20 +122,18 @@ var usersModuleHandler = function(app, dbName) {
       var usersMongo = new mongodb.Collection(client, 'users');
         
       //Query and update the parameters for this userId.
-      usersMongo.findOne({ "fulfillments.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, function(err, object) {
-        if(!err) {
-          if(object) {
-            console.log("Object is not null");            
-            console.log(JSON.stringify(object));
-            res.send(object.fulfillments[0]);
-          } else if(object == null) {
-            console.log("Object is null");
-            res.send(null);
-          }
-        } else {
-          console.warn("Error occurred " + err);
-          res.send();
+      usersMongo.findOne({ "fulfillments.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, function(error, object) {
+        if(error) throw error;
+
+        if(object) {
+          console.log("Object is not null");            
+          console.log(JSON.stringify(object));
+          res.send(object.fulfillments[0]);
+        } else if(object == null) {
+          console.log("Object is null");
+          res.send(null);
         }
+      
         db.close();
       });
     });
@@ -157,35 +146,36 @@ var usersModuleHandler = function(app, dbName) {
     var companyObjArray = new Array();
     
     var numOfEvents = 0;
-    db.open(function (error, client) {    
+    db.open(function (error, client) {  
+      if (error) throw error;   
+
       var usersMongo = new mongodb.Collection(client, 'users');
       var companiesMongo = new mongodb.Collection(client, 'companies');      
-      usersMongo.findOne({_id: new ObjectID(req.params.userId)}, function(err, userObj) {
-        if(!err && userObj) {
-          
-          //Get the array of companyId's and build the list of company objects to query for.
-          for(var key in userObj.contests) { 
-            console.log("companyId being added to query " + userObj.contests[key].companyId);           
-            var companyObjectId = new ObjectID(userObj.contests[key].companyId);
-            companyObjArray.push(companyObjectId);
-            console.log(JSON.stringify(companyObjArray));
-            numOfEvents++;
-          }
-          
-
-          //Query the companies collection and return the list of company objects.
-          companiesMongo.find({"_id": {$in : companyObjArray }}).toArray(function(err, companyObj) {
-            if(!err) {
-              //Now that I have the list of company objects I can pass it back and modify the order here 
-              console.log("Sending client these company objects " + JSON.stringify(companyObj));
-              userContestObj = {};
-              userContestObj.contests = companyObj;
-              userContestObj.userObject = userObj;
-              res.send(userContestObj);
-              db.close();              
-            }
-          });
+      
+      usersMongo.findOne({_id: new ObjectID(req.params.userId)}, function(error, userObj) {
+        if (error) throw error; 
+                  
+        //Get the array of companyId's and build the list of company objects to query for.
+        for(var key in userObj.contests) { 
+          console.log("companyId being added to query " + userObj.contests[key].companyId);           
+          var companyObjectId = new ObjectID(userObj.contests[key].companyId);
+          companyObjArray.push(companyObjectId);
+          console.log(JSON.stringify(companyObjArray));
+          numOfEvents++;
         }
+        
+        //Query the companies collection and return the list of company objects.
+        companiesMongo.find({"_id": {$in : companyObjArray }}).toArray(function(error, companyObj) {
+          if (error) throw error; 
+
+          //Now that I have the list of company objects I can pass it back and modify the order here 
+          console.log("Sending client these company objects " + JSON.stringify(companyObj));
+          userContestObj = {};
+          userContestObj.contests = companyObj;
+          userContestObj.userObject = userObj;
+          res.send(userContestObj);
+          db.close();              
+        });
       });
     });
   });
@@ -193,27 +183,23 @@ var usersModuleHandler = function(app, dbName) {
   app.get('/addUserParticipation/:userId/:companyId', function(req, res) {
     console.log("Add user participation");
     
-    db.open(function (error, client) {    
+    db.open(function (error, client) {  
+      if(error) throw error;
+        
       var usersMongo = new mongodb.Collection(client, 'users');
       var companiesMongo = new mongodb.Collection(client, 'companies');
       
       //Push a contest object to the user object.
-      usersMongo.update({"contests.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, {$inc: {"contests.$.participationCount": 1}},function(err, userObj) {
-        if(!err) {
+      usersMongo.update({"contests.companyId": { $in : [req.params.companyId]}, _id: new ObjectID(req.params.userId)}, {$inc: {"contests.$.participationCount": 1}},function(error, userObj) {
+        if(error) throw error;
+
+        //Push an entry onto the company object.
+        companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push : {"entryList" : req.params.userId }}, function(error, companyObj) {
+          if(error) throw error;
           
-          //Push an entry onto the company object.
-          companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push : {"entryList" : req.params.userId }}, function(err, companyObj) {
-            if(!err) {
-              res.send("Participation complete");
-            }
-            
-            //close database
-            db.close();
-          });
-        } else {
-         db.close();
-         res.send("There was an error in adding user participation"); 
-        }
+          res.send("Participation complete");
+          db.close();
+        });
       });
     });
   });

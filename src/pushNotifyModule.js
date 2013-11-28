@@ -16,9 +16,11 @@ var pushNotifyModuleHandler = function(app, dbName, serverType) {
   if(serverType == "production") {
     certPem = fs.readFileSync('./apns_dist/goosii_apns_dist_cer.pem', encoding='ascii')
     keyPem = fs.readFileSync('./apns_dist/goosii_apns_dist_noenc.pem', encoding='ascii')
-    caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
+    // caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
+    caCert = fs.readFileSync('./apns_dist/aps_production.cer', encoding='ascii')
     options = { key: keyPem, cert: certPem, ca: [ caCert ] }
     apnsServer = "gateway.push.apple.com"
+    
   } else {
     console.log("Setting up sandbox apns configurations");
     certPem = fs.readFileSync('./apns_dev/goosii_apns_dev_cer.pem', encoding='ascii')
@@ -45,7 +47,8 @@ var pushNotifyModuleHandler = function(app, dbName, serverType) {
   
   //Send notification test to Justin's phone
   app.get('/sendNotification', function(req, res) {
-
+    console.log('sending test notification');
+    console.log(apnsServer);
     next = function(){};
 
     var stream = tls.connect(2195, apnsServer, options, function() {

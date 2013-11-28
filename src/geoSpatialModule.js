@@ -53,15 +53,17 @@ var geoSpatialModuleHandler = function(app, dbName) {
 
     console.log("open db");
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if(error) throw error;      
+
       var company = new mongodb.Collection(client, 'companies');
       console.log("query db");
-      company.find().toArray(function(err, results) {
-        if(!err) {
-          if(results.length == 0) {
-           res.send(); 
-          }
+      company.find().toArray(function(error, results) {
+        if(error) throw error;
+
+        if(results.length == 0) {
+         res.send(); 
         }
+      
         console.log("close db");
         db.close();
         nearbyCompaniesRecursive(req.params.userId, results, results.length, res);
@@ -72,21 +74,22 @@ var geoSpatialModuleHandler = function(app, dbName) {
   
   app.get('/testGeoSpatialQuery/:userId/:longitude/:latitude', function(req, res) {
     console.log("nearbyCompanies request");
-
-    console.log("open db");
     console.log("Long: "+ req.params.longitude + " Lat: "+ req.params.latitude);
+
     //db.runCommand( { geoNear : "companies" , near : [-122.015041, 37.324044], num : 10, spherical: true });
-    db.command( { geoNear : "companies" , near : [parseFloat(req.params.longitude), parseFloat(req.params.latitude)], num : 10, spherical: true }, function(err, results){
-      
+    db.command( { geoNear : "companies" , near : [parseFloat(req.params.longitude), parseFloat(req.params.latitude)], num : 10, spherical: true }, function(error, results){
+      if(error) throw error;
       db.open(function (error, client) {
+        if(error) throw error;
+
         var usersMongo = new mongodb.Collection(client, 'users');
 
-        console.log("query database");
-        usersMongo.findOne({ _id : new ObjectID(req.params.userId)}, function(err, userObj) {
-        results.userObject = userObj;
-        console.log("success");
-        db.close();
-        res.send(results);  
+        usersMongo.findOne({ _id : new ObjectID(req.params.userId)}, function(error, userObj) {
+          if(error) throw error;
+
+          results.userObject = userObj;
+          db.close();
+          res.send(results);  
         });
       });  
     });
