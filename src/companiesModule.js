@@ -25,6 +25,7 @@ var companiesModuleHandler = function(app, dbName) {
   utilitiesModule.getCurrentUtcTimestamp();
   
   app.get('/getComp/:companyId',function  (req,res,next) {
+    loggingSystem.addToLog("GET /getComp/" + req.params.companyId);          
     res.type('application/json');
 
     //insert the user document object into the collection
@@ -43,6 +44,7 @@ var companiesModuleHandler = function(app, dbName) {
   });
   
   app.get('/testTime', function(req, res) {
+    loggingSystem.addToLog("GET /testTime");            
     console.log(utilitiesModule.getCurrentUtcTimestamp());
     var atCommandDate = utilitiesModule.getAtCommandFormattedDate(utilitiesModule.getCurrentUtcTimestamp());
     loggingSystem.addToLog('companiesModule.js: test time returning ' + atCommandDate);
@@ -52,12 +54,13 @@ var companiesModuleHandler = function(app, dbName) {
   });
       
   app.get('/getCurrentTime', function(req, res) {
+    loggingSystem.addToLog("GET /getCurrentTime");    
     console.log(utilitiesModule.getCurrentUtcTimestamp());
     res.send(utilitiesModule.getCurrentUtcTimestamp());
   });
   
   app.get('/createEndDate/:hour/:minute/:year/:month/:day', function(req, res) {
-    
+    loggingSystem.addToLog("GET /createEndDate");        
     //set the date and time.
     timeinfo = {
         hour: req.params.hour,
@@ -101,7 +104,7 @@ var companiesModuleHandler = function(app, dbName) {
   });
       
   app.get('/createCompany/:companyInfo', function(req, res) {
-
+    loggingSystem.addToLog("GET /createCompany/" + req.params.companyInfo);          
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
      //Create the user document object to save to mongoDB 
@@ -140,7 +143,7 @@ var companiesModuleHandler = function(app, dbName) {
 
   //Get a company object using the "_id".
   app.get('/getCompany/:companyId', function(req, res) {
-
+    loggingSystem.addToLog("GET /createCompany/" + req.params.companyId);          
     //insert the user document object into the collection
     db.open(function (error, client) {
       if(error) throw error;

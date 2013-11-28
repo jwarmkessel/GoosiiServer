@@ -2,6 +2,7 @@ var geoSpatialModuleHandler = function(app, dbName) {
 	console.log("geoSpatialmodule loaded");
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
+    ,loggingSystem = require('./loggingSystem.js');  
     
   //Native mongodb
   var mongodb = require('mongodb');
@@ -49,6 +50,7 @@ var geoSpatialModuleHandler = function(app, dbName) {
   //This doesn't actually get the closest companies. It gets EVERY SINGLE company.
   //TODO setup geo-spatial queries
   app.get('/nearbyCompanies/:userId', function(req, res) {
+    loggingSystem.addToLog("GET /nearbyCompanies/" + req.params.userId);    
     console.log("nearbyCompanies request");
 
     console.log("open db");
@@ -73,6 +75,7 @@ var geoSpatialModuleHandler = function(app, dbName) {
   
   
   app.get('/testGeoSpatialQuery/:userId/:longitude/:latitude', function(req, res) {
+    loggingSystem.addToLog("GET /testGeoSpatialQuery/" + req.params.userId + "/" + req.params.longitude + "/" + req.params.latitude);    
     console.log("nearbyCompanies request");
     console.log("Long: "+ req.params.longitude + " Lat: "+ req.params.latitude);
 

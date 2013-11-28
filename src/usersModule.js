@@ -3,6 +3,7 @@ var usersModuleHandler = function(app, dbName) {
   
   var check = require('validator').check
     ,sanitize = require('validator').sanitize
+    ,loggingSystem = require('./loggingSystem.js');
     
   //Native mongodb
   var mongodb = require('mongodb');
@@ -28,7 +29,7 @@ var usersModuleHandler = function(app, dbName) {
   
   
   app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
-    
+    loggingSystem.addToLog("GET /createUser/" + req.params.userIdentifier + "/" + req.params.pushIdentifier);
     console.log("starting createUser with userIdentifier " + req.params.userIdentifier);
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
 
@@ -70,6 +71,7 @@ var usersModuleHandler = function(app, dbName) {
   //loginUser requires the additional pushIdentifier because these tokens may change.
   //Also updates the lastlogin.
   app.get('/loginUser/:userId/:pushIdentifier', function(req, res) {
+    loggingSystem.addToLog("GET /loginUser/" + req.params.userId + "/" + req.params.pushIdentifier);
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
     console.log("Logging in: " + req.params.userId + " with pushIdentifier " + req.params.pushIdentifier);
     db.open(function (error, client) {
@@ -104,7 +106,8 @@ var usersModuleHandler = function(app, dbName) {
   });
   
   app.get('/getUserFulfillments/:userId/:companyId', function(req, res) {
-    console.log("getUser() for: http://www.goosii.com:3001/getUserFulfillments/" + req.params.userId + "/" + req.params.companyId);
+    loggingSystem.addToLog("GET /getUserFulfillments/" + req.params.userId + "/" + req.params.companyId);
+
     db.open(function (error, client) {
       if (error) throw error;    
       //validate the id string.
@@ -141,6 +144,7 @@ var usersModuleHandler = function(app, dbName) {
 
   //Query and return the company objects for all the events the user is participating in. 
   app.get('/getUserContests/:userId', function(req, res) {
+    loggingSystem.addToLog("GET /getUserContests/" + req.params.userId);    
     console.log("getUserContests called by user " + req.params.userId);
     //The array of company id's to query in companies.
     var companyObjArray = new Array();
@@ -181,8 +185,8 @@ var usersModuleHandler = function(app, dbName) {
   });
   
   app.get('/addUserParticipation/:userId/:companyId', function(req, res) {
-    console.log("Add user participation");
-    
+    loggingSystem.addToLog("GET /addUserParticipation/" + req.params.userId + "/" + req.params.companyId);
+
     db.open(function (error, client) {  
       if(error) throw error;
         

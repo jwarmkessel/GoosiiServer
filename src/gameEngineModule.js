@@ -5,7 +5,8 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
       ,fs = require('fs')
       ,crypto = require('crypto')
       ,tls = require('tls')
-      ,http = require('http');
+      ,http = require('http')
+      ,loggingSystem = require('./loggingSystem.js');      
       
   var certPem;
   var keyPem;
@@ -51,6 +52,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   
   //This ends the event, tags all participants with a fulfillment flag, and resets the contest object in the companies document.
   app.get('/expireContest/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /expireContest/" + req.params.companyId);    
     console.log("Expire the contest");
     //Open the database
     db.open(function (error, client) {
@@ -95,6 +97,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   };
   
   app.get('/updateEvent/:companyId/:eventObject', function(req, res) {
+    loggingSystem.addToLog("GET /updateEvent/" + req.params.companyId + "/" + req.params.eventObject);        
     var eventObj = JSON.parse(req.params.eventObject);
 
     var contestObj = {"contest" : eventObj };
@@ -114,6 +117,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   });
   
   app.get('/createContest/:companyId/:eventObj', function(req, res) {
+    loggingSystem.addToLog("GET /updateEvent/" + req.params.companyId + "/" + req.params.eventObject);            
     //var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
     var eventObject = JSON.parse(req.params.eventObj);
     console.log("start date " + eventObject.startDate);
@@ -395,6 +399,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   }
 
   app.get('/determineContestWinner/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /determineContestWinner/" + req.params.companyId);            
     db.open(function (error, client) {
       if(error) throw error;
       
@@ -418,6 +423,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   
   //Checking in is akin to entering the contest. Within this method we check whether the user is already included in this contest
   app.get('/enterContest/:userId/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /enterContest/" + req.params.userId + "/" + req.params.companyId);    
     //var utc_timestamp = getCurrentUtcTimestamp();
 
     //Open the database
@@ -479,7 +485,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   });
 
   app.get('/getContest/:companyId', function(req, res) {  
-    console.log("getContest");
+    loggingSystem.addToLog("GET /getContest/" + req.params.companyId);          
 
     db.open(function (error, client) {
       if (error) throw error;
@@ -495,7 +501,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   });
   
   app.get('/getCompanyAndUser/:companyId/:userId', function(req, res) {  
-    console.log("getCompanyAndUser");
+    loggingSystem.addToLog("GET /getCompanyAndUser/" + req.params.companyId + "/" + req.params.userId);    
 
     db.open(function (error, client) {
       if (error) throw error;
@@ -523,7 +529,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   2. The user participates and thus has an opportunity to see if there is a reward. 
   */
   app.get('/removeFulfillmentAndReward/:companyId/:userId', function(req, res) {  
-    console.log("Calling removeFulfillmentAndReward()");
+    loggingSystem.addToLog("GET /removeFulfillmentAndReward/" + req.params.companyId + "/" + req.params.userId);    
     db.open(function (error, client) {
       if (error) throw error;
 
@@ -543,6 +549,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
 
   
   app.get('/removeFulfillmentObject/:companyId/:userId', function(req, res) {  
+    loggingSystem.addToLog("GET /removeFulfillmentObject/" + req.params.companyId + "/" + req.params.userId);        
     db.open(function (error, client) {
       if (error) throw error;
       
@@ -572,6 +579,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   });
   
   app.get('/getReward/:companyId/:userId', function(req, res) {  
+    loggingSystem.addToLog("GET /getReward/" + req.params.companyId + "/" + req.params.userId);            
     db.open(function (error, client) {
       if (error) throw error;
       
@@ -595,6 +603,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   });
   
   app.get('/checkPassword/:companyId/:userId/:password', function(req, res) {  
+    loggingSystem.addToLog("GET /checkPassword/" + req.params.companyId + "/" + req.params.userId + "/" + req.params.password);                
     db.open(function (error, client) {
       if (error) throw error;
       
