@@ -20,36 +20,22 @@ var companiesModuleHandler = function(app, dbName) {
   var asyncblock = require('asyncblock');
   var exec = require('child_process').exec;
 
-  // asyncblock(function (flow) {
-  //     setTimeout(flow.add(), 5000);
-  //     flow.wait(); //Wait for the second setTimeout to finish
-  //     exec('node -v', flow.add());
-  //     result = flow.wait();
-  //     console.log(result);    // There'll be trailing \n in the output
-  // 
-  //     // Some other jobs
-  //     console.log('More results like if it were sync...');
-  // });
-  
   //Import Utilities Module
   var utilitiesModule = require('./utilitiesModule.js');
   utilitiesModule.getCurrentUtcTimestamp();
   
   app.get('/getComp/:companyId',function  (req,res,next) {
     res.type('application/json');
-    console.log(req.params.companyId);
+
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if(error) throw error;
 
       var company = new mongodb.Collection(client, 'companies');
 
-      company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, object) {
-        console.log("The object " + object);
-        if (err) console.warn(err.message);
-        if (err && err.message.indexOf('E11000 ') !== -1) {
-          // this _id was already inserted in the database
-        }
+      company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(error, object) {
+        if(error) throw error;
+
         res.jsonp(object);
         db.close();
       });
@@ -113,43 +99,7 @@ var companiesModuleHandler = function(app, dbName) {
 
     res.send(timeInMilliseconds.toString());
   });
-  
-  /*
-  getTimezone: [Function: getTimezone],
-  getDate: [Function: getDate],
-  getDay: [Function: getDay],
-  getYear: [Function: getYear],
-  getFullYear: [Function: getFullYear],
-  getHours: [Function: getHours],
-  getMinutes: [Function: getMinutes],
-  getMonth: [Function: getMonth],
-  getSeconds: [Function: getSeconds],
-  getTimezoneOffset: [Function: getTimezoneOffset],
-  getTimezoneAbbr: [Function: getTimezoneAbbr],
-  setAllDateFields: [Function: setAllDateFields],
-  setDate: [Function: setDate],
-  setFullYear: [Function: setFullYear],
-  setHours: [Function: setHours],
-  setMilliseconds: [Function: setMilliseconds],
-  setMinutes: [Function: setMinutes],
-  setMonth: [Function: setMonth],
-  setSeconds: [Function: setSeconds],
-  setTime: [Function: setTime],
-  setUTCDate: [Function: setUTCDate],
-  setUTCFullYear: [Function: setUTCFullYear],
-  setUTCHours: [Function: setUTCHours],
-  setUTCMilliseconds: [Function: setUTCMillseconds],
-  setUTCMinutes: [Function: setUTCMinutes],
-  setUTCMonth: [Function: setUTCMonth],
-  setUTCSeconds: [Function: setUTCSeconds],
-  toDateString: [Function: toDateString],
-  toTimeString: [Function: toTimeString],
-  toString: [Function: toString],
-  toLocaleDateString: [Function: toLocaleDateString],
-  toLocaleTimeString: [Function: toLocaleTimeString],
-  toLocaleString: [Function: toString]  
-  */
-    
+      
   app.get('/createCompany/:companyInfo', function(req, res) {
 
     var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
@@ -159,12 +109,9 @@ var companiesModuleHandler = function(app, dbName) {
                             "name" : "Goosii",
      	                      "address" : "767 Chopin Drive, Sunnyvale, CA 94087",
                           	"location" : {
-                          		"type" : "Point",
-                          		"coordinates" : [
-                          			-121.89409,
-                          			37.383613
-                          		]
-                          	},
+                                      		"type" : "Point",
+                                      		"coordinates" : []
+                          	              },
      	                      "telephone" : "4086054692",
      	                      "contest" : {
      		                                  "startDate" : "",
@@ -178,15 +125,12 @@ var companiesModuleHandler = function(app, dbName) {
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
-      var companies = new mongodb.Collection(client, 'companies');
+      if(error) throw error;
 
-      companies.insert(companyObject, {safe:true}, function(err, object) {
-        console.log("The object " + object);
-        if (err) console.warn(err.message);
-        if (err && err.message.indexOf('E11000 ') !== -1) {
-          // this _id was already inserted in the database
-        }
+      var companies = new mongodb.Collection(client, 'companies');
+      companies.insert(companyObject, {safe:true}, function(error, object) {
+        if(error) throw error;
+
         console.log("Sending id back " + object[0]._id);
         res.send(JSON.stringify(object[0]._id));
         db.close();
@@ -199,16 +143,12 @@ var companiesModuleHandler = function(app, dbName) {
 
     //insert the user document object into the collection
     db.open(function (error, client) {
-      if (error) {console.log("Db open failed"); throw error};
+      if(error) throw error;
 
       var company = new mongodb.Collection(client, 'companies');
-
-      company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(err, object) {
-        console.log("The object " + object);
-        if (err) console.warn(err.message);
-        if (err && err.message.indexOf('E11000 ') !== -1) {
-          // this _id was already inserted in the database
-        }
+      company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(error, object) {
+        if(error) throw error;        
+        
         res.send(object);
         db.close();
       });
