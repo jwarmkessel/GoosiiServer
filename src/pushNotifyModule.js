@@ -16,8 +16,8 @@ var pushNotifyModuleHandler = function(app, dbName, serverType) {
   if(serverType == "production") {
     certPem = fs.readFileSync('./apns_dist/goosii_apns_dist_cer.pem', encoding='ascii')
     keyPem = fs.readFileSync('./apns_dist/goosii_apns_dist_noenc.pem', encoding='ascii')
-    // caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
-    caCert = fs.readFileSync('./apns_dist/aps_production.cer', encoding='ascii')
+    caCert = fs.readFileSync('./apns_dist/entrust_2048_ca.cer', encoding='ascii')
+    // caCert = fs.readFileSync('./apns_dist/aps_production.cer', encoding='ascii')
     options = { key: keyPem, cert: certPem, ca: [ caCert ] }
     apnsServer = "gateway.push.apple.com"
     
@@ -60,7 +60,7 @@ var pushNotifyModuleHandler = function(app, dbName, serverType) {
 
     var
         pushnd = { aps: { alert:'Goosii Push Notification Test.' }, customParam: { foo: 'bar' } } // 'aps' is required
-        ,hextoken = '6ebf5909fb9fa9a451ab685820896c475a62fb7b8410119926f5783f38b9bb57' // Push token from iPhone app. 32 bytes as hexadecimal string
+        ,hextoken = '4bea9cb164a51c06d6671af71c786b01c5fb04272d729d55516f7f78423aacae' // Push token from iPhone app. 32 bytes as hexadecimal string
         //,hextoken = '6ebf5909fb9fa9a451ab685820896c475a62fb7b8410119926f5783f38b9bb57' // Push token from iPhone app. 32 bytes as hexadecimal string
         ,token = hextobin(hextoken)
         ,payload = JSON.stringify(pushnd)

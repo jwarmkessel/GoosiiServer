@@ -1,6 +1,6 @@
 
 //Swith out these strings to run either production, sandbox, or demo.
-var environment = "sandbox";
+var environment = "production";
 var port;
 var serverType;
 var dbName;

@@ -472,13 +472,13 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(error, userObject) {
                 if (error) throw error;
 
-                res.send("You are now participating");                     
+                res.send("YES");                     
                 db.close();
               });                 
             });
           });  
         } else {
-          console.log("Already entered so let's do nothing");
+          console.log("NO");
         }
       });
     });
