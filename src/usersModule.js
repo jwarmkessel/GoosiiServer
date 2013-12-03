@@ -185,7 +185,7 @@ var usersModuleHandler = function(app, dbName) {
   });
   
   app.get('/addUserParticipation/:userId/:companyId', function(req, res) {
-    loggingSystem.addToLog("GET /addUserParticipation/" + req.params.userId + "/" + req.params.companyId);
+    loggingSystem.addToLog("GET /addUserParticipation" + req.params.userId + "/" + req.params.companyId);
 
     db.open(function (error, client) {  
       if(error) throw error;
@@ -207,7 +207,49 @@ var usersModuleHandler = function(app, dbName) {
       });
     });
   });
+  
+  app.get('/insertRecognizedEmployee/:userId/:companyId/:employeeName', function(req, res) {
+    loggingSystem.addToLog("GET /recognizeEmployee" + req.params.userId + "/" + req.params.companyId);    
+    
+    db.open(function (error, client) {  
+      if(error) throw error;
+        
+      var recognizedEmployeesMongo = new mongodb.Collection(client, 'recognizedEmployees');     
+      
+      //Build the employee object.
+      var employeeObject = {"companyId": req.params.companyId,
+                            "userId" : req.params.userId,
+                            "employeeName" : req.params.employeeName,
+                            "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
+                            };
 
+      //Insert employee object into 'recognizedEmployees' collection.
+      recognizedEmployeesMongo.insert(employeeObject, {safe:true}, function(error, object){
+        if(error) throw error;
+        
+        res.send("success");
+        db.close();
+      });      
+    });
+  });
+  
+  app.get('/getRecognizedEmployees/:userId/:companyId/:startDate/:endDate', function(req, res) {
+    loggingSystem.addToLog("GET /recognizeEmployee" + req.params.userId + "/" + req.params.companyId);    
+    
+    db.open(function (error, client) {  
+      if(error) throw error;
+        
+      var recognizedEmployeesMongo = new mongodb.Collection(client, 'recognizedEmployees');     
+
+      //Find range of recognized employees based on timestamp.
+      recognizedEmployeesMongo.find({"companyId" : req.params.companyId, "timestamp" : {$gt: req.params.startDate, $lt: req.params.endDate}}, {safe:true}, function(error, object){
+        if(error) throw error;
+        
+        res.send("success");
+        db.close();
+      });      
+    });
+  });
 };
 
 exports.usersModuleHandler = usersModuleHandler;
