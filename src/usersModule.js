@@ -201,8 +201,23 @@ var usersModuleHandler = function(app, dbName) {
         companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push : {"entryList" : req.params.userId }}, function(error, companyObj) {
           if(error) throw error;
           
-          res.send("Participation complete");
-          db.close();
+          //Capture this participation event.
+          var participationMongo = new mongodb.Collection(client, 'participations');     
+
+          //Build the participation object.
+          var participationObject = {
+                                  "companyId": req.params.companyId,
+                                  "userId": req.params.userId,                                          
+                                  "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
+                                 };
+
+          //Insert employee object into 'participations' collection.
+          participationMongo.insert(participationObject, {safe:true}, function(error, object){
+            if(error) throw error;
+
+            res.send("Participation complete");
+            db.close();
+          });       
         });
       });
     });

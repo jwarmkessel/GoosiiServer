@@ -39,10 +39,26 @@ var yourCompanyWebsiteModuleHandler = function(app, dbName) {
       
       //Add or update coupon coupon by incrementing by one.
       companies.update({_id: ObjectID(req.params.companyId)}, { $inc : { "coupon.total": 1 } }, {safe:true}, function(err, object) {
-        if (err) console.warn(err.message);
+        if(error) throw error;
+        
         console.log("incrementing total coupon count by 1");
-        res.jsonp("success");
-        db.close();
+
+        //Capture this validated coupon.
+        var validatedCouponsMongo = new mongodb.Collection(client, 'validatedCoupons');     
+
+        //Build the first time checkin object.
+        var validatedCouponsObject = {
+                                      "companyId": req.params.companyId,
+                                      "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
+                                     };
+
+        //Insert employee object into 'validatedCoupons' collection.
+        validatedCouponsMongo.insert(validatedCouponsObject, {safe:true}, function(error, object){
+          if(error) throw error;
+
+          res.jsonp("success");
+          db.close();
+        });
       });
     });
   });

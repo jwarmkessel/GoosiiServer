@@ -472,12 +472,27 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(error, userObject) {
                 if (error) throw error;
 
-                res.send("YES");                     
-                db.close();
+                //Capture this first time checkin.
+                var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');     
+
+                //Build the first time checkin object.
+                var firstTimeCheckinObject = {"companyId": req.params.companyId,
+                                      "userId" : req.params.userId,
+                                      "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
+                                      };
+
+                //Insert employee object into 'firstTimeCheckins' collection.
+                firstTimeCheckinsMongo.insert(firstTimeCheckinObject, {safe:true}, function(error, object){
+                  if(error) throw error;
+
+                  res.send("YES");                     
+                  db.close();
+                });
               });                 
             });
           });  
         } else {
+          //TODO capture last checkin
           console.log("NO");
         }
       });
@@ -570,8 +585,25 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           usersMongo.update({"rewards.companyId": { $in : [ req.params.companyId ] } , _id : new ObjectID(req.params.userId)}, {$inc: {"rewards.$.fulfillment": -1}}, function(error, object) {
             if (error) throw error;
             
-            res.send("Fulfillment flag removed and participation count set to 0");
-            db.close();           
+            console.log("Fulfillment flag removed and participation count set to 0");
+
+            //Capture this fulfillment event.
+            var fulfillmentsMongo = new mongodb.Collection(client, 'fulfillments');     
+
+            //Build the fulfillment object.
+            var fulfillmentsObj = {
+                                    "companyId": req.params.companyId,
+                                    "userId": req.params.userId,                                          
+                                    "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
+                                   };
+
+            //Insert employee object into 'fulfillments' collection.
+            fulfillmentsMongo.insert(fulfillmentsObj, {safe:true}, function(error, object){
+              if(error) throw error;
+
+              res.send("success");
+              db.close();
+            });       
           });
         });
       });
