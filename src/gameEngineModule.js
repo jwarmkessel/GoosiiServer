@@ -544,7 +544,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   2. The user participates and thus has an opportunity to see if there is a reward. 
   */
   app.get('/removeFulfillmentAndReward/:companyId/:userId', function(req, res) {  
-    loggingSystem.addToLog("GET /removeFulfillmentAndReward/" + req.params.companyId + "/" + req.params.userId);    
+    loggingSystem.addToLog("GET /removeFulfillmentAndReward" + req.params.companyId + "/" + req.params.userId);    
     db.open(function (error, client) {
       if (error) throw error;
 
@@ -555,8 +555,12 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
         usersMongo.update({ _id : new ObjectID(req.params.userId), "rewards.companyId": { $in : [req.params.companyId]}},{ $pull: { "rewards": {"companyId" : req.params.companyId}}} , {safe:false}, function(error, userObj) {
           if (error) throw error;
         
-          res.send("Fulfillment flag removed and participation count set to 0");
-          db.close();
+          usersMongo.update({_id : new ObjectID(req.params.userId), "contests.companyId": { $in : [req.params.companyId]} }, {$set : {"contests.$.participationCount" : 0}}, function(error, object) {                
+            if (error) throw error;
+        
+            res.send("Fulfillment flag removed and participation count set to 0");
+            db.close();
+          });
         });  
       });
     });
@@ -659,7 +663,8 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
                 
                   break;
                 }
-              }                
+              }        
+                      
               //Remove the reward and the null object $unset leaves behind.
               usersMongo.update({"rewards.companyId": { $in : [req.params.companyId] } , "rewards.fulfillment": { $in : [0]}, "_id" : new ObjectID(req.params.userId)}, { $unset : { "rewards.$" : ""}}, function(error, object) {
                 if (error) throw error;                
