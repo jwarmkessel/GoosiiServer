@@ -74,8 +74,8 @@ var geoSpatialModuleHandler = function(app, dbName) {
   });
   
   
-  app.get('/testGeoSpatialQuery/:userId/:longitude/:latitude', function(req, res) {
-    loggingSystem.addToLog("GET /testGeoSpatialQuery/" + req.params.userId + "/" + req.params.longitude + "/" + req.params.latitude);    
+  app.get('/geoSpatialQuery/:userId/:longitude/:latitude', function(req, res) {
+    loggingSystem.addToLog("GET /geoSpatialQuery/" + req.params.userId + "/" + req.params.longitude + "/" + req.params.latitude);    
     console.log("nearbyCompanies request");
     console.log("Long: "+ req.params.longitude + " Lat: "+ req.params.latitude);
 
@@ -91,6 +91,7 @@ var geoSpatialModuleHandler = function(app, dbName) {
           if(error) throw error;
 
           results.userObject = userObj;
+          results.distanceConfiguration = {"distance" : 30};
           db.close();
           res.send(results);  
         });

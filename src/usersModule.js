@@ -25,8 +25,7 @@ var usersModuleHandler = function(app, dbName) {
 
       res.send("hi");
     });
-  });
-  
+  });  
   
   app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
     loggingSystem.addToLog("GET /createUser/" + req.params.userIdentifier + "/" + req.params.pushIdentifier);
@@ -40,6 +39,46 @@ var usersModuleHandler = function(app, dbName) {
                          		"adIdentifier" : "",
                          		"created" : utc_timestamp,
                          		"lastlogin" : utc_timestamp,
+                         		"firstName" : "",
+                         		"lastName" : "",
+                         		"email" : "",   
+                         		"phoneNumber" : "",                         		                      		                         		
+                         		"birthday" : "",
+                         		"contests" : [],
+                         		"posts" : [],
+                         		"rewards" : [],
+                         		"fulfillments" : []
+                           };
+                           
+    //insert the user document object into the collection
+    db.open(function (error, client) {
+      if (error) throw error;
+      var collection = new mongodb.Collection(client, 'users');
+      collection.insert(newUserObject, {safe:true}, function(err, object) {
+        if (err) throw error;
+        if (err && err.message.indexOf('E11000 ') !== -1) {
+          // this _id was already inserted in the database
+        }
+
+        db.close();
+        res.send(JSON.stringify(object[0]._id));
+      });
+    });
+  });
+  
+  app.get('/createUser/:userIdentifier/:pushIdentifier/:fullName', function(req, res) {
+    loggingSystem.addToLog("GET /createUser/" + req.params.userIdentifier + "/" + req.params.pushIdentifier);
+    console.log("starting createUser with userIdentifier " + req.params.userIdentifier);
+    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
+
+     //Create the user document object to save to mongoDB 
+    var newUserObject =  {
+                           	"identifier" : req.params.userIdentifier,
+                            "pushIdentifier" : req.params.pushIdentifier,
+                         		"adIdentifier" : "",
+                         		"created" : utc_timestamp,
+                         		"lastlogin" : utc_timestamp,
+                         		"fullName" : req.params.fullName,
                          		"firstName" : "",
                          		"lastName" : "",
                          		"email" : "",   

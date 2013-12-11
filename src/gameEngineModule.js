@@ -424,7 +424,6 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   //Checking in is akin to entering the contest. Within this method we check whether the user is already included in this contest
   app.get('/enterContest/:userId/:companyId', function(req, res) {
     loggingSystem.addToLog("GET /enterContest/" + req.params.userId + "/" + req.params.companyId);    
-    //var utc_timestamp = getCurrentUtcTimestamp();
 
     //Open the database
     db.open(function (error, client) {
@@ -441,8 +440,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
         var i = 0;
         
         //Itereate through the list of contests (userObject.contests) the user is a part of.
-        for (var key in userObject.contests)
-        {
+        for (var key in userObject.contests) {
           //If the companyID is present within the users list of contests then we know the user has already checked into this event.
           if(userObject.contests[key].companyId == req.params.companyId) {
             console.log("set 'entered' flag to yes");

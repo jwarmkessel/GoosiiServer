@@ -12,8 +12,6 @@ var addToLog = function(message) {
 	} else {
 		fs.writeFile('SystemLog.txt', message);
 	}
-
-	console.log("Log Successful");	
 }
 
 exports.addToLog = addToLog;
