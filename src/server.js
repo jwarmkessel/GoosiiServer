@@ -1,7 +1,7 @@
 require('newrelic');
 
 //Swith out these strings to run either production, sandbox, or demo.
-var environment = "production";
+var environment = "sandbox";
 var port;
 var serverType;
 var dbName;

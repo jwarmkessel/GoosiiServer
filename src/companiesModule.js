@@ -157,6 +157,98 @@ var companiesModuleHandler = function(app, dbName) {
       });
     });
   });
+  
+  app.get('/getAllOfCompanyFirstTimeCheckins/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /getAllOfCompanyFirstTimeCheckins/" + req.params.companyId);          
+    //insert the user document object into the collection
+    db.open(function (error, client) {
+      if(error) throw error;
+
+      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');
+      
+      firstTimeCheckinsMongo.find({"companyId": req.params.companyId }).toArray(function(error, results) {
+        if(error) throw error;
+        
+        console.log("THE LENGTH " + results.length);
+        console.log("THE LENGTH " + results[0]);        
+        
+        res.jsonp(results);        
+        db.close();
+
+      });
+    });
+  });
+  
+  app.get('/analytics/getFirsttimeCheckIns/:companyId/:endDate', function(req, res){
+    loggingSystem.addToLog("GET /analytics/getFirsttimeCheckIns/:companyId/:endDate" + req.params.companyId);          
+
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var companies = new mongodb.Collection(client, 'companies');
+      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');      
+
+      //find the current event according to the selected company
+      companies.find({_id: req.params.companyId}, function(err, doc){
+        if(error) throw error;        
+        var startDate = new Date(doc[0].contest.startDate);
+        var endDate = new Date(req.params.endDate);
+        
+        //get all first time check-ins between the beginning of the company's start date and the current date.
+        firstTimeCheckIns.find({companyId: req.params.companyId, "timestamp" : {$gte: startDate.valueOf(), $lt: endDate.valueOf()}}, function(err, doc){
+          if(error) throw error;          
+          var firstTimeCheckInCount = doc.length;  
+          console.log('THE COUNT: ' + firstTimeCheckInCount);     
+
+          res.jsonp(firstTimeCheckInCount);
+          db.close();
+        });
+      });
+    });
+  });
+  
+  app.get('/analytics/displayInRange/:companyId/:startDate/:endDate', function(req, res){
+    
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');      
+
+      //get all first time check-ins between the beginning of the company's start date and the current date.
+      firstTimeCheckIns.find({companyId: req.params.companyId, "timestamp" : {$gte: req.params.startDate, $lt: req.params.endDate}}, function(err, doc){
+        if(error) throw error;        
+        
+        res.jsonp(doc);
+        db.close();
+      });
+    });
+  });
+  
+  app.get('/analytics/getUniqueDates/:companyId', function(req, res){
+    // We only want information from the past seven days. 
+    var sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 40);
+    sevenDaysAgo.setHours(0);
+    sevenDaysAgo.setMinutes(0);
+    sevenDaysAgo.setSeconds(0);
+    sevenDaysAgo.setMilliseconds(0);
+    sevenDaysAgo_milli = Date.UTC(sevenDaysAgo.getFullYear(),sevenDaysAgo.getMonth(),sevenDaysAgo.getDate());
+
+    console.log(req.params.companyId + ' - ' + sevenDaysAgo_milli);
+
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');      
+      
+      firstTimeCheckIns.find({companyId: req.params.companyId}).where('timestamp').gte(sevenDaysAgo_milli).sort({timestamp: -1}).distinct('timestamp', function(err, doc){
+        console.log(doc);
+        var test = JSON.stringify(doc);
+        res.jsonp(doc);
+      });      
+    });
+  });
+  
 };
 
 exports.companiesModuleHandler = companiesModuleHandler;
