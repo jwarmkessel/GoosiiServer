@@ -224,31 +224,6 @@ var companiesModuleHandler = function(app, dbName) {
     });
   });
   
-  app.get('/analytics/getUniqueDates/:companyId', function(req, res){
-    // We only want information from the past seven days. 
-    var sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 40);
-    sevenDaysAgo.setHours(0);
-    sevenDaysAgo.setMinutes(0);
-    sevenDaysAgo.setSeconds(0);
-    sevenDaysAgo.setMilliseconds(0);
-    sevenDaysAgo_milli = Date.UTC(sevenDaysAgo.getFullYear(),sevenDaysAgo.getMonth(),sevenDaysAgo.getDate());
-
-    console.log(req.params.companyId + ' - ' + sevenDaysAgo_milli);
-
-    db.open(function (error, client) {
-      if(error) throw error;
-      
-      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');      
-      
-      firstTimeCheckIns.find({companyId: req.params.companyId}).where('timestamp').gte(sevenDaysAgo_milli).sort({timestamp: -1}).distinct('timestamp', function(err, doc){
-        console.log(doc);
-        var test = JSON.stringify(doc);
-        res.jsonp(doc);
-      });      
-    });
-  });
-  
 };
 
 exports.companiesModuleHandler = companiesModuleHandler;
