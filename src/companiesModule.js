@@ -208,7 +208,7 @@ var companiesModuleHandler = function(app, dbName) {
   });
   
   app.get('/analytics/displayInRange/:companyId/:startDate/:endDate', function(req, res){
-    
+    loggingSystem.addToLog("GET /analytics/displayInRange/:companyId/:startDate/:endDate" + req.params.companyId);          
     db.open(function (error, client) {
       if(error) throw error;
       
@@ -220,6 +220,43 @@ var companiesModuleHandler = function(app, dbName) {
         
         res.jsonp(doc);
         db.close();
+      });
+    });
+  });
+  
+  app.get('/analytics/getTotalParticipants/:companyId', function(req, res){
+    loggingSystem.addToLog("GET /analytics/getTotalParticipants/:companyId" + req.params.companyId);          
+    
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var companiesMongo = new mongodb.Collection(client, 'companies');      
+
+      //get all first time check-ins between the beginning of the company's start date and the current date.
+      companiesMongo.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(error, companyObj) {
+        if(error) throw error;        
+        
+        res.send(companyObj.participants);
+        db.close();
+      });
+    });
+  });
+  
+  app.get('/analytics/getTotalValidatedCoupons/:companyId', function(req, res){
+    loggingSystem.addToLog("GET /analytics/getTotalValidatedCoupons/:companyId" + req.params.companyId);          
+    
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var validatedCouponsMongo = new mongodb.Collection(client, 'validatedCoupons');      
+
+      //get all first time check-ins between the beginning of the company's start date and the current date.
+      validatedCouponsMongo.find({"companyId": req.params.companyId }).toArray(function(error, results) {
+        if(error) throw error;
+
+        res.jsonp(results);        
+        db.close();
+
       });
     });
   });
