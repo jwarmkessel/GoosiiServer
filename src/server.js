@@ -131,7 +131,7 @@ var companiesModule = require('./companiesModule.js');
 companiesModule.companiesModuleHandler(app, dbName, serverType);
 
 var gameEngineModule = require('./gameEngineModule.js');
-gameEngineModule.gameEngineModuleHandler(app, dbName, serverType);
+gameEngineModule.gameEngineModuleHandler(app, dbName, serverType, port);
 
 var geoSpatialModule = require('./geoSpatialModule.js');
 geoSpatialModule.geoSpatialModuleHandler(app, dbName, serverType);

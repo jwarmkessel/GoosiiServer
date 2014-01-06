@@ -1,4 +1,4 @@
-var gameEngineModuleHandler = function(app, dbName, serverType) {
+var gameEngineModuleHandler = function(app, dbName, serverType, port) {
   console.log("including gameEngineModule");
   
   var express = require('express')
@@ -49,6 +49,46 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
   var exec = require('child_process').exec;
     
   var utilitiesModule = require('./utilitiesModule.js');
+  
+  app.post('/test', express.bodyParser(), function (req, res) {
+    res.header("Access-Control-Allow-Origin", "*");
+
+    // Request headers you wish to allow
+     res.header('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    // res.header("Access-Control-Allow-Headers", "X-Requested-With");
+
+    // Request methods you wish to allow
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    console.log("got post");
+    console.log(req.body);
+    console.log(req.files);
+
+    fs.readFile(req.files.uploadingFile.path, function (err, data) {
+      console.log("File Path: /root/justin/companyAssets/" + req.body.companyId + "/" +  req.body.imageIsFor);
+      fs.writeFile("/root/justin/companyAssets/" + req.body.companyId + "/" +  req.body.imageIsFor, data, function (err) {
+        //res.redirect("back");
+        if(err) {
+            console.log(err);
+        } else {
+            console.log("The file was saved!");
+        }
+
+      });
+    });
+  });
+  
+  app.get('/testFile', function(req, res) {
+    console.log('testfile');
+        
+    fs.stat("/root/justin/companyAssets/5233805ec22ccd54d6fd2cff/rewardImage.jpg", function(err, stat) {
+        console.log("STAT " + stat.mtime);
+        console.log("STAT " + stat.mtime.getTime());        
+        
+        //Perhaps converting time to milliseconds.
+        var lastModifiedTime = stat.mtime.getTime();
+        res.send(lastModifiedTime.toString());
+    });
+  });
   
   //This ends the event, tags all participants with a fulfillment flag, and resets the contest object in the companies document.
   app.get('/expireContest/:companyId', function(req, res) {
@@ -153,7 +193,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
           eventObject.endDate = parseInt(eventObject.endDate);
           console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate));
           
-          exec('echo "curl http://127.0.0.1:3001/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate), function (error, stdout, stderr) {
+          exec('echo "curl http://127.0.0.1:'+port+'/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate), function (error, stdout, stderr) {
             if(error) throw error;
 
             console.log('stdout: ' + stdout);
@@ -288,7 +328,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
               console.log("Expiring " + event._id.toString());
 
               //expire the contest after the users have had their fulfillment set.
-              exec('echo "curl http://127.0.0.1:3001/expireContest/' + event._id.toString() + '"', flow.add());
+              exec('echo "curl http://127.0.0.1:'+port+'/expireContest/' + event._id.toString() + '"', flow.add());
             });
 
             console.log("Let's not call our recursive function again."); 
@@ -684,6 +724,43 @@ var gameEngineModuleHandler = function(app, dbName, serverType) {
       });
     });
   });
+  
+  app.get('/getAtCommandFormattedDate/:timeStamp/:companyId', function(req, res) {    
+    loggingSystem.addToLog("GET /getAtCommandFormattedDate/:timeStamp");                
+    var eventObject = {};
+    eventObject.endDate = req.params.timeStamp;
+    asyncblock(function (flow) {
+      //TODO set this up so that it can handle multiple time zones.  
+      console.log("The end date " + eventObject.endDate);
+      eventObject.endDate = parseInt(eventObject.endDate);
+      console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate));
+      
+      //TODO CHANGE THE ASYNBLOCK TO EXECUTE ON PRODUCTION/DEMO/SANDBOX SERVERS
+      exec('echo "curl http://127.0.0.1:'+port+'/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate), function (error, stdout, stderr) {
+        if(error) throw error;
+
+        console.log('stdout: ' + stdout);
+        console.log('stderr: ' + stderr);
+
+        var stderrArray = stderr.split(/[ ]+/);
+
+        var i = 0;
+        var jobNumber;
+        for(i=0; i< stderrArray.length; i++) {
+
+          if(stderrArray[i] == "using") {
+            var jobIndex = i+2;
+            console.log("The job number is " + stderrArray[jobIndex]);   
+            jobNumber = stderrArray[jobIndex];          
+          }
+        }
+        
+        //Set job number in company object in mongodb.
+        setEventJobNumber(req.params.companyId, jobNumber, res);
+      });
+    });
+  });
+  
 };
 
 exports.gameEngineModuleHandler = gameEngineModuleHandler;
