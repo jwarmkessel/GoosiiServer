@@ -91,7 +91,7 @@ var geoSpatialModuleHandler = function(app, dbName) {
           if(error) throw error;
 
           results.userObject = userObj;
-          results.distanceConfiguration = {"distance" : 30};
+          results.distanceConfiguration = {"distance" : 10};
           db.close();
           res.send(results);  
         });

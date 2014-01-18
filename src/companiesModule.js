@@ -189,18 +189,18 @@ var companiesModuleHandler = function(app, dbName) {
       var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');      
 
       //find the current event according to the selected company
-      companies.find({_id: req.params.companyId}, function(err, doc){
-        if(error) throw error;        
-        var startDate = new Date(doc[0].contest.startDate);
-        var endDate = new Date(req.params.endDate);
+      companies.findOne({_id: new ObjectID(req.params.companyId)}, function(err, doc){
+        if(error) throw error;       
+        
+       
+        var startDate = doc.contest.startDate;
+        var endDate = parseInt(req.params.endDate);
         
         //get all first time check-ins between the beginning of the company's start date and the current date.
-        firstTimeCheckIns.find({companyId: req.params.companyId, "timestamp" : {$gte: startDate.valueOf(), $lt: endDate.valueOf()}}, function(err, doc){
-          if(error) throw error;          
-          var firstTimeCheckInCount = doc.length;  
-          console.log('THE COUNT: ' + firstTimeCheckInCount);     
+        firstTimeCheckinsMongo.find({companyId: req.params.companyId, "timestamp" : {$gte: startDate, $lt: endDate}}).toArray(function(error, results) {
+          if(error) throw error;
 
-          res.jsonp(firstTimeCheckInCount);
+          res.jsonp(results);        
           db.close();
         });
       });
@@ -212,13 +212,17 @@ var companiesModuleHandler = function(app, dbName) {
     db.open(function (error, client) {
       if(error) throw error;
       
-      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');      
-
+      var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins'); 
+      
+      console.log(req.params.companyId);
+      console.log(req.params.startDate);
+      console.log(req.params.endDate);
+      //db.firstTimeCheckins.find({companyId: "52019889f868cadd76000002", "timestamp" : {$gte: 1384003077000, $lt: 1389168000000}});
       //get all first time check-ins between the beginning of the company's start date and the current date.
-      firstTimeCheckIns.find({companyId: req.params.companyId, "timestamp" : {$gte: req.params.startDate, $lt: req.params.endDate}}, function(err, doc){
-        if(error) throw error;        
-        
-        res.jsonp(doc);
+      firstTimeCheckinsMongo.find({companyId: req.params.companyId, "timestamp" : {$gte: parseInt(req.params.startDate), $lt: parseInt(req.params.endDate)}}).toArray(function(error, results) {
+        if(error) throw error;
+
+        res.jsonp(results);        
         db.close();
       });
     });
@@ -236,7 +240,7 @@ var companiesModuleHandler = function(app, dbName) {
       companiesMongo.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(error, companyObj) {
         if(error) throw error;        
         
-        res.send(companyObj.participants);
+        res.jsonp(companyObj.participants);
         db.close();
       });
     });
@@ -252,6 +256,44 @@ var companiesModuleHandler = function(app, dbName) {
 
       //get all first time check-ins between the beginning of the company's start date and the current date.
       validatedCouponsMongo.find({"companyId": req.params.companyId }).toArray(function(error, results) {
+        if(error) throw error;
+
+        res.jsonp(results);        
+        db.close();
+
+      });
+    });
+  });
+
+  app.get('/analytics/getTotalFulfillmentPosts/:companyId', function(req, res){
+    loggingSystem.addToLog("GET /analytics/getTotalFulfillmentPosts/:companyId" + req.params.companyId);          
+    
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var fulfillmentsMongo = new mongodb.Collection(client, 'fulfillments');      
+
+      //get all first time check-ins between the beginning of the company's start date and the current date.
+      fulfillmentsMongo.find({"companyId": req.params.companyId }).toArray(function(error, results) {
+        if(error) throw error;
+
+        res.jsonp(results);        
+        db.close();
+
+      });
+    });
+  });
+  
+  app.get('/analytics/geteventEndedPosts/:companyId', function(req, res){
+    loggingSystem.addToLog("GET /analytics/geteventEndedPosts/:companyId" + req.params.companyId);          
+    
+    db.open(function (error, client) {
+      if(error) throw error;
+      
+      var eventEndedPostsMongo = new mongodb.Collection(client, 'participations');      
+
+      //get all first time check-ins between the beginning of the company's start date and the current date.
+      eventEndedPostsMongo.find({"companyId": req.params.companyId }).toArray(function(error, results) {
         if(error) throw error;
 
         res.jsonp(results);        

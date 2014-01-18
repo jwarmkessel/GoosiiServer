@@ -1,6 +1,4 @@
 var addToLog = function(message) {
-	console.log("including addToLog");
-
 	var fs = require('fs');
         
   var today = new Date;

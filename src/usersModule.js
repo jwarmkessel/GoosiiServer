@@ -27,6 +27,44 @@ var usersModuleHandler = function(app, dbName) {
     });
   });  
   
+  app.get('/getUserUniqueId', function(req, res) {
+    loggingSystem.addToLog("GET /getUserUniqueId/" + req.params.userIdentifier + "/" + req.params.pushIdentifier);
+    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
+
+     //Create the user document object to save to mongoDB 
+    var newUserObject =  {
+                           	"identifier" : "",
+                            "pushIdentifier" : "",
+                         		"adIdentifier" : "",
+                         		"created" : utc_timestamp,
+                         		"lastlogin" : utc_timestamp,
+                         		"firstName" : "",
+                         		"lastName" : "",
+                         		"email" : "",   
+                         		"phoneNumber" : "",                         		                      		                         		
+                         		"birthday" : "",
+                         		"contests" : [],
+                         		"posts" : [],
+                         		"rewards" : [],
+                         		"fulfillments" : []
+                           };
+                           
+    //insert the user document object into the collection
+    db.open(function (error, client) {
+      if (error) throw error;
+      var collection = new mongodb.Collection(client, 'users');
+      collection.insert(newUserObject, {safe:true}, function(err, object) {
+        if (err) throw error;
+        if (err && err.message.indexOf('E11000 ') !== -1) {
+          // this _id was already inserted in the database
+        }
+
+        db.close();
+        res.send(JSON.stringify(object[0]._id));
+      });
+    });
+  });
+  
   app.get('/createUser/:userIdentifier/:pushIdentifier', function(req, res) {
     loggingSystem.addToLog("GET /createUser/" + req.params.userIdentifier + "/" + req.params.pushIdentifier);
     console.log("starting createUser with userIdentifier " + req.params.userIdentifier);
@@ -138,6 +176,29 @@ var usersModuleHandler = function(app, dbName) {
         
         console.log(JSON.stringify(object));
         
+        db.close();
+        res.send("login successful");        
+      });
+    });
+  });
+  
+  app.get('/setUserNameAndDeviceToken/:userId/:pushIdentifier/:fullName', function(req, res) {
+    loggingSystem.addToLog("GET /loginUser/" + req.params.userId + "/" + req.params.pushIdentifier);
+    var utc_timestamp = utilitiesModule.getCurrentUtcTimestamp();
+    console.log("Logging in: " + req.params.userId + " with pushIdentifier " + req.params.pushIdentifier);
+    db.open(function (error, client) {
+      if (error) throw error;    
+      
+      //Retrieve the users collection.
+      var usersMongo = new mongodb.Collection(client, 'users');
+      
+      //Create the JSON object filled with elements to update.
+      userObject = {"lastlogin" : utc_timestamp, "pushIdentifier" : req.params.pushIdentifier, "fullName" : req.params.fullName };      
+      
+      //Query and update the parameters for this userId.
+      usersMongo.update({_id: new ObjectID(req.params.userId)}, {$set: userObject}, function(error, object) {
+        if(error) throw error;
+              
         db.close();
         res.send("login successful");        
       });

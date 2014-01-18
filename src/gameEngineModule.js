@@ -725,6 +725,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
     });
   });
   
+  //TODO: WARNING - THIS IS AN INCOMPLETE API CALL WHICH DOES NOT COMPLETELY WORK AS EXPECTED.
   app.get('/getAtCommandFormattedDate/:timeStamp/:companyId', function(req, res) {    
     loggingSystem.addToLog("GET /getAtCommandFormattedDate/:timeStamp");                
     var eventObject = {};
@@ -735,7 +736,6 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
       eventObject.endDate = parseInt(eventObject.endDate);
       console.log("setting at command to execute company event" + req.params.companyId + " at " + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate));
       
-      //TODO CHANGE THE ASYNBLOCK TO EXECUTE ON PRODUCTION/DEMO/SANDBOX SERVERS
       exec('echo "curl http://127.0.0.1:'+port+'/determineContestWinner/'+ req.params.companyId +'" | at ' + utilitiesModule.getAtCommandFormattedDate(eventObject.endDate), function (error, stdout, stderr) {
         if(error) throw error;
 
