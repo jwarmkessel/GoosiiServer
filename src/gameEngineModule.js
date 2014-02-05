@@ -466,6 +466,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
     loggingSystem.addToLog("GET /enterContest/" + req.params.userId + "/" + req.params.companyId);    
 
     //Open the database
+    loggingSystem.addToLog("/enterContest: Opening database.");
     db.open(function (error, client) {
       if (error) throw error;
 
@@ -486,8 +487,11 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
             console.log("set 'entered' flag to yes");
             //Set a flag to indicate that the user is already checked in.
             isCheckedIn = 1;
+            res.send();
+            loggingSystem.addToLog("/enterContest: User is already entered. Closing database.");
             db.close();  
-            res.send("Awesome, you're already checked in.");
+            
+            return;
           }            
           i++;
         }
@@ -523,7 +527,8 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
                 firstTimeCheckinsMongo.insert(firstTimeCheckinObject, {safe:true}, function(error, object){
                   if(error) throw error;
 
-                  res.send("YES");                     
+                  res.send("YES");  
+                  loggingSystem.addToLog("/enterContest: User is now entered. Closing database.");                           
                   db.close();
                 });
               });                 
@@ -532,6 +537,9 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
         } else {
           //TODO capture last checkin
           console.log("NO");
+          res.send("NO");
+          loggingSystem.addToLog("/enterContest: Closing database.");      
+          db.close();
         }
       });
     });

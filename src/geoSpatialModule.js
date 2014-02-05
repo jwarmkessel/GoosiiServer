@@ -79,19 +79,25 @@ var geoSpatialModuleHandler = function(app, dbName) {
     console.log("nearbyCompanies request");
     console.log("Long: "+ req.params.longitude + " Lat: "+ req.params.latitude);
 
-    //db.runCommand( { geoNear : "companies" , near : [-122.015041, 37.324044], num : 10, spherical: true });
-    db.command( { geoNear : "companies" , near : [parseFloat(req.params.longitude), parseFloat(req.params.latitude)], num : 10, spherical: true }, function(error, results){
+    loggingSystem.addToLog("/geoSpatialQuery: Opening database");      
+    db.open(function (error, client) {
       if(error) throw error;
-      db.open(function (error, client) {
+    
+      //db.runCommand( { geoNear : "companies" , near : [-122.015041, 37.324044], num : 10, spherical: true });
+      loggingSystem.addToLog("/geoSpatialQuery: Starting geoQuery using db.comamnd()");    
+      db.command( { geoNear : "companies" , near : [parseFloat(req.params.longitude), parseFloat(req.params.latitude)], num : 10, spherical: true }, function(error, results){
         if(error) throw error;
-
+      
         var usersMongo = new mongodb.Collection(client, 'users');
-
+        
+        loggingSystem.addToLog("/geoSpatialQuery: Querying users collection for user document");      
         usersMongo.findOne({ _id : new ObjectID(req.params.userId)}, function(error, userObj) {
           if(error) throw error;
 
           results.userObject = userObj;
-          results.distanceConfiguration = {"distance" : 10};
+          results.distanceConfiguration = {"distance" : 30};
+          
+          loggingSystem.addToLog("/geoSpatialQuery: Closing DB");      
           db.close();
           res.send(results);  
         });

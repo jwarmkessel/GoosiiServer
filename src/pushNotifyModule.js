@@ -60,7 +60,7 @@ var pushNotifyModuleHandler = function(app, dbName, serverType) {
 
     var
         pushnd = { aps: { alert:'Goosii Push Notification Test.' }, customParam: { foo: 'bar' } } // 'aps' is required
-        ,hextoken = '4bea9cb164a51c06d6671af71c786b01c5fb04272d729d55516f7f78423aacae' // Push token from iPhone app. 32 bytes as hexadecimal string
+        ,hextoken = '3c103a589a1a151592229cd8fc40852fa0568ad0c40c8f365c5f765cd792ea9a' // Push token from iPhone app. 32 bytes as hexadecimal string
         //,hextoken = '6ebf5909fb9fa9a451ab685820896c475a62fb7b8410119926f5783f38b9bb57' // Push token from iPhone app. 32 bytes as hexadecimal string
         ,token = hextobin(hextoken)
         ,payload = JSON.stringify(pushnd)

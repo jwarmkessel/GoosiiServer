@@ -19,6 +19,7 @@ var usersModuleHandler = function(app, dbName) {
   
   app.get('/hi', function(req, res, next) {
     console.log("testing hi");
+    console.log(req.session.lastPage);
     // Handle the get for this route
     db.open(function (error, client) {
       if(error) throw error;
@@ -365,6 +366,65 @@ var usersModuleHandler = function(app, dbName) {
       });      
     });
   });
+  
+  app.get('/getUser/:userId', function(req, res) {
+    loggingSystem.addToLog("GET /getUser/:userId" + req.params.userId);
+
+    db.open(function (error, client) {
+      if (error) throw error;    
+      //validate the id string.
+      try {
+        var checker = check(req.params.userId).len(24).isHexadecimal();   
+      }catch (e) {
+        db.close();
+        res.send("There was a problem with the userID");        
+        console.log(e.message);
+        
+        return;
+      }
+      
+      //Retrieve the users collection.
+      var usersMongo = new mongodb.Collection(client, 'users');
+        
+      //Query and update the parameters for this userId.
+      usersMongo.findOne({ _id: new ObjectID(req.params.userId) }, function(error, object) {
+        if(error) throw error;
+        
+        res.send(object);
+        db.close();
+      });
+    });
+  });
+  
+  app.get('/getNotificationFlags/:userId', function(req, res) {
+    loggingSystem.addToLog("GET /getNotificationFlags/:userId" + req.params.userId);
+
+    db.open(function (error, client) {
+      if (error) throw error;    
+      //validate the id string.
+      try {
+        var checker = check(req.params.userId).len(24).isHexadecimal();   
+      }catch (e) {
+        db.close();
+        res.send("There was a problem with the userID");        
+        console.log(e.message);
+        
+        return;
+      }
+      
+      //Retrieve the users collection.
+      var usersMongo = new mongodb.Collection(client, 'users');
+        
+      //Query and update the parameters for this userId.
+      usersMongo.findOne({ _id: new ObjectID(req.params.userId) }, function(error, object) {
+        if(error) throw error;
+                
+        res.send(object.fulfillments.length.toString());
+        db.close();
+      });
+    });
+  });
+  
 };
 
 exports.usersModuleHandler = usersModuleHandler;

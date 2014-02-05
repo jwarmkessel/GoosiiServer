@@ -1,7 +1,7 @@
 require('newrelic');
 
 //Swith out these strings to run either production, sandbox, or demo.
-var environment = "production";
+var environment = "sandbox";
 var port;
 var serverType;
 var dbName;
@@ -32,6 +32,8 @@ var express = require('express')
     ,workers = process.env.WORKERS || require('os').cpus().length // 10/10/2013 by MC
     ,loggingSystem = require('./loggingSystem.js') // 10/10/2013 by MC
     ,utilitiesModule = require('./utilitiesModule.js');
+    
+// var MongoStore = require('connect-mongodb')(express);
 
 //Image and form uploads. I might be able to remove this since I have Gridform
 var formidable = require('formidable');
@@ -55,6 +57,15 @@ gridform.mongo = mongodb;
 
 //Easily create an http server using express
 var app = express();
+
+// app.use(express.cookieParser());
+// app.use(express.session({
+//   store: new MongoStore({
+//     url: 'mongodb://root:@goosii.com:27017/GlobalGoosiiMetricsDB'
+//   }),
+//   secret: '1234567890QWERTY'
+// }));
+
 
 //With domain-middleware
 app.use(require('express-domain-middleware'));

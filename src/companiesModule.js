@@ -28,15 +28,16 @@ var companiesModuleHandler = function(app, dbName) {
     loggingSystem.addToLog("GET /getComp/" + req.params.companyId);          
     res.type('application/json');
 
+    loggingSystem.addToLog("/getComp/: Opening the DB");          
     //insert the user document object into the collection
     db.open(function (error, client) {
       if(error) throw error;
 
       var company = new mongodb.Collection(client, 'companies');
-
+      loggingSystem.addToLog("/getComp/: Querying for the company object" + req.params.companyId);          
       company.findOne({_id: new ObjectID(req.params.companyId)}, {safe:false}, function(error, object) {
         if(error) throw error;
-
+        loggingSystem.addToLog("/getComp/: Responding with company object " + object);          
         res.jsonp(object);
         db.close();
       });
@@ -301,6 +302,25 @@ var companiesModuleHandler = function(app, dbName) {
 
       });
     });
+  });
+  
+  app.get('/login/getCompanyObject/:login/:password', function(req, res){
+    loggingSystem.addToLog("GET /login/getCompanyObject/" + req.params.login + "/" + req.params.password);          
+    //insert the user document object into the collection
+    db.open(function (error, client) {
+      if(error) throw error;
+
+      var companyMongo = new mongodb.Collection(client, 'companies');
+      companyMongo.findOne({"email" : req.params.login, "loginPassword" : req.params.password}, {safe:false}, function(error, companyObj) {
+        if(error) throw error;        
+        
+        console.log(companyObj.email);
+        
+        res.jsonp(companyObj);
+        db.close();
+      });
+    });
+
   });
   
 };
