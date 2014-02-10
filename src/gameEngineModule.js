@@ -294,7 +294,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
   };
   
   
-  function selectWinnerRecursive(count, participants, event, client, res) {    
+  function selectWinnerRecursive(count, participants, event, client, res, db) {    
     event.contest.companyId = event._id.toString(); 
     var selectWinnerRecursiveGlobalCompanyId = event._id.toString(); 
     
@@ -440,11 +440,14 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
 
   app.get('/determineContestWinner/:companyId', function(req, res) {
     loggingSystem.addToLog("GET /determineContestWinner/" + req.params.companyId);            
+    
+    loggingSystem.addToLog("/determineContestWinner: Opening database.");      
     db.open(function (error, client) {
       if(error) throw error;
       
       var companies = new mongodb.Collection(client, 'companies');
       
+      loggingSystem.addToLog("/determineContestWinner: querying company object.");            
       companies.findOne({_id: new ObjectID(req.params.companyId)}, function(error, object) {
         if(error) throw error;
       
@@ -454,9 +457,9 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
         }
         
         console.log("sending selectWinnerRecursive with " + count + "\n");
-        db.close();
+
         //Select winner iterates through the participants, determines a winner, and sets the fulfillment parameters in the user object. 
-        selectWinnerRecursive(count, object.participants, object, client, res);
+        selectWinnerRecursive(count, object.participants, object, client, res, db);
       });
     }); 
   });

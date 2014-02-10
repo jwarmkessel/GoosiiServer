@@ -314,9 +314,16 @@ var companiesModuleHandler = function(app, dbName) {
       companyMongo.findOne({"email" : req.params.login, "loginPassword" : req.params.password}, {safe:false}, function(error, companyObj) {
         if(error) throw error;        
         
-        console.log(companyObj.email);
+
+        if(companyObj) { 
+          loggingSystem.addToLog("/login/getCompanyObject/" + companyObj.name + "is logging in");          
+          res.jsonp(companyObj);  
+
+        } else {
+          loggingSystem.addToLog("/login/getCompanyObject/" + req.params.login + "/" + req.params.password +" is failing to login");          
+          res.jsonp('invalid');  
+        }
         
-        res.jsonp(companyObj);
         db.close();
       });
     });
