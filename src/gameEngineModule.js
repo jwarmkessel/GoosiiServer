@@ -91,35 +91,35 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
   });
   
   //This ends the event, tags all participants with a fulfillment flag, and resets the contest object in the companies document.
-  app.get('/expireContest/:companyId', function(req, res) {
-    loggingSystem.addToLog("GET /expireContest/" + req.params.companyId);    
-    console.log("Expire the contest");
-    //Open the database
-    db.open(function (error, client) {
-      if (error) throw error;
-
-      var companiesMongo = new mongodb.Collection(client, 'companies');    
-       
-       var contestObj =  { "startDate" : "",
-                             "endDate" : "", 
-                               "prize" : "", 
-                            "prizeImg" : "",
-               "mobileBackgroundImage" : "",                           
-                   "participationPost" : "",
-                                "post" : "",                  
-                            "password" : "",
-                             "website" : ""
-                         }                    
-
-      companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : {"contest" : contestObj}}, {safe:true}, function(error, object) {
-        if(error) throw error;
-
-        console.log("success " + JSON.stringify(object));
-        db.close();
-        res.send();
-      });
-    });
-  });
+  // app.get('/expireContest/:companyId', function(req, res) {
+  //   loggingSystem.addToLog("GET /expireContest/" + req.params.companyId);    
+  //   console.log("Expire the contest");
+  //   //Open the database
+  //   db.open(function (error, client) {
+  //     if (error) throw error;
+  // 
+  //     var companiesMongo = new mongodb.Collection(client, 'companies');    
+  //      
+  //      var contestObj =  { "startDate" : "",
+  //                            "endDate" : "", 
+  //                              "prize" : "", 
+  //                           "prizeImg" : "",
+  //              "mobileBackgroundImage" : "",                           
+  //                  "participationPost" : "",
+  //                               "post" : "",                  
+  //                           "password" : "",
+  //                            "website" : ""
+  //                        }                    
+  // 
+  //     companiesMongo.update({_id: ObjectID(req.params.companyId)}, {$set : {"contest" : contestObj}}, {safe:true}, function(error, object) {
+  //       if(error) throw error;
+  // 
+  //       console.log("success " + JSON.stringify(object));
+  //       db.close();
+  //       res.send();
+  //     });
+  //   });
+  // });
     
   //Set the job number for the Event created
   var setEventJobNumber = function(companyId, jobNumber, res) {
@@ -303,7 +303,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
     
     var usersMongo = new mongodb.Collection(client, 'users');
     var companiesMongo = new mongodb.Collection(client, 'companies');
-    
+          
     usersMongo.findOne({ "fulfillments.companyId": { $in : [event._id.toString()]}, _id : new ObjectID(participants[count-1].userId)}, function(error, object) {
       if(error) throw error;
       
@@ -322,14 +322,14 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
           
 
           if(count == 1) {
-
-            asyncblock(function (flow) {
-              //TODO set this up so that it can handle multiple time zones.  
-              console.log("Expiring " + event._id.toString());
-
-              //expire the contest after the users have had their fulfillment set.
-              exec('echo "curl http://127.0.0.1:'+port+'/expireContest/' + event._id.toString() + '"', flow.add());
-            });
+            loggingSystem.addToLog("/determineContestWinner -> selectWinnerRecursive(): Preparing to select the winner and set the reward flag.");
+            // asyncblock(function (flow) {
+            //   //TODO set this up so that it can handle multiple time zones.  
+            //   console.log("Expiring " + event._id.toString());
+            // 
+            //   //expire the contest after the users have had their fulfillment set.
+            //   exec('echo "curl http://127.0.0.1:'+port+'/expireContest/' + event._id.toString() + '"', flow.add());
+            // });
 
             console.log("Let's not call our recursive function again."); 
 
@@ -372,7 +372,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
                      usersMongo.update({_id: new ObjectID(winnerId)}, {$push : {"rewards" : companyObj.contest}}, function(error, userObj) {
                        if(error) throw error;
 
-                      console.log("Winner has been set");
+                       loggingSystem.addToLog("/determineContestWinner -> selectWinnerRecursive(): Reward has been set for " + winnerId );
 
                       usersMongo.update({"fulfillments.companyId": { $in : [event._id.toString()]} , _id: new ObjectID(winnerId)}, {$set : {"fulfillments.$.reward" : 1}}, function(error, userObj) {
                         if(error) throw error;
@@ -380,6 +380,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
                         console.log("Setting reward flag on fulfillment object.");                      
                         companiesMongo.update({_id : new ObjectID(event.contest.companyId)}, {$unset : { "entryList" : ""}}, function(error, object) {
                           if(error) throw error;
+                          loggingSystem.addToLog("/determineContestWinner -> selectWinnerRecursive(): Deleting the entry list");
                           console.log("DELETING THE ENTRY LIST! " + event.contest.companyId);
                           db.close();      
                           res.send("complete");
@@ -410,7 +411,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
 
                     usersMongo.update({_id: new ObjectID(winner.userId)}, {$push : {"rewards" : companyObj.contest}}, function(error, userObj) {
                       if(error) throw error;
-                      console.log("Winner has been set");
+                      loggingSystem.addToLog("/determineContestWinner -> selectWinnerRecursive(): Reward has been set for " + winner.userId );
 
                       usersMongo.update({"fulfillments.companyId": { $in : [event._id.toString()]} , _id: new ObjectID(winner.userId)}, {$set : {"fulfillments.$.reward" : 1}}, function(error, userObj) {
                         if(error) throw error;                        
@@ -419,6 +420,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
                         companiesMongo.update({_id : new ObjectID(companyObj.contest.companyId) }, {$unset : { "entryList" : ""}}, function(error, object) {
                           if(error) throw error;
 
+                          loggingSystem.addToLog("/determineContestWinner -> selectWinnerRecursive(): Deleting the entry list");
                           console.log("DELETING THE ENTRY LIST! " + companyObj.contest.companyId);
                           db.close();      
                           res.send("complete");
@@ -431,7 +433,7 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
             });
           } else {
             count--;
-            selectWinnerRecursive(count, participants, event, client, res); 
+            selectWinnerRecursive(count, participants, event, client, res, db); 
           }
         });
       });                      
@@ -513,28 +515,32 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
 
             usersMongo.update({_id: new ObjectID(req.params.userId)}, {$addToSet: {"contests" : {"companyId" :req.params.companyId, "participationCount" : 0}}}, {safe:true}, function(error, userObject) {
               if (error) throw error;
-              
-              companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(error, userObject) {
+                            
+              usersMongo.update({_id : new ObjectID(req.params.userId), "contests.companyId": { $in : [req.params.companyId]} }, {$set : {"contests.$.notification" : 0}}, function(err, object) {
                 if (error) throw error;
 
-                //Capture this first time checkin.
-                var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');     
+                companiesMongo.update({_id: new ObjectID(req.params.companyId)}, {$push: {"entryList" : req.params.userId}}, {safe:true}, function(error, userObject) {
+                  if (error) throw error;
 
-                //Build the first time checkin object.
-                var firstTimeCheckinObject = {"companyId": req.params.companyId,
-                                      "userId" : req.params.userId,
-                                      "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
-                                      };
+                  //Capture this first time checkin.
+                  var firstTimeCheckinsMongo = new mongodb.Collection(client, 'firstTimeCheckins');     
 
-                //Insert employee object into 'firstTimeCheckins' collection.
-                firstTimeCheckinsMongo.insert(firstTimeCheckinObject, {safe:true}, function(error, object){
-                  if(error) throw error;
+                  //Build the first time checkin object.
+                  var firstTimeCheckinObject = {"companyId": req.params.companyId,
+                                        "userId" : req.params.userId,
+                                        "timestamp" : utilitiesModule.getCurrentUtcTimestamp()
+                                        };
 
-                  res.send("YES");  
-                  loggingSystem.addToLog("/enterContest: User is now entered. Closing database.");                           
-                  db.close();
-                });
-              });                 
+                  //Insert employee object into 'firstTimeCheckins' collection.
+                  firstTimeCheckinsMongo.insert(firstTimeCheckinObject, {safe:true}, function(error, object){
+                    if(error) throw error;
+
+                    res.send("YES");  
+                    loggingSystem.addToLog("/enterContest: User is now entered. Closing database.");                           
+                    db.close();
+                  });
+                });    
+              });                             
             });
           });  
         } else {
@@ -544,6 +550,71 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
           loggingSystem.addToLog("/enterContest: Closing database.");      
           db.close();
         }
+      });
+    });
+  });
+  
+  app.get('/unFollowCompany/:userId/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /unFollowCompany/" + req.params.userId + "/" + req.params.companyId);    
+    
+    loggingSystem.addToLog("/unFollowCompany: Opening database.");
+    db.open(function (error, client) {
+      var usersMongo = new mongodb.Collection(client, 'users');   
+      var companiesMongo = new mongodb.Collection(client, 'companies');   
+      
+      companiesMongo.update( {"_id" : ObjectID(req.params.companyId)}, {$pull : {"participants" :  { "userId" : req.params.userId } }}, {safe:true}, function(error, result) {                        
+        if (error) throw error;
+        loggingSystem.addToLog("/unFollowCompany: Pulling user from participants list.");
+        
+        companiesMongo.update( {"_id" : ObjectID(req.params.companyId)}, {$pull : {"entryList" : req.params.userId  }}, {safe:true}, function(error, result) {                        
+          if (error) throw error;
+          loggingSystem.addToLog("/unFollowCompany: Pulling user from entrylist.");
+          
+          usersMongo.update( {"_id" : ObjectID(req.params.userId)}, {$pull : {"contests" :  { "companyId" : req.params.companyId } }}, {safe:true}, function(error, result) {                        
+            if (error) throw error;
+            loggingSystem.addToLog("/unFollowCompany: Removing the company id from user's list of companies.");
+            
+            res.send("finished");            
+            loggingSystem.addToLog("/unFollowCompany: Closing database.");      
+            db.close();
+          });        
+        });        
+      });
+    });      
+  });
+  
+  app.get('/setNotifications/:userId/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /setNotifications/" + req.params.userId + "/" + req.params.companyId);    
+    
+    loggingSystem.addToLog("/setNotifications: Opening database.");
+    db.open(function (error, client) {
+      var usersMongo = new mongodb.Collection(client, 'users');   
+            
+      usersMongo.update({_id : new ObjectID(req.params.userId), "contests.companyId": { $in : [req.params.companyId]} }, {$set : {"contests.$.notification" : 1}}, function(err, object) {                
+        if (error) throw error;
+        loggingSystem.addToLog("/setNotifications: Setting notifications to on.");
+        
+        res.send("OK");
+        loggingSystem.addToLog("/setNotifications: Closing database.");
+        db.close();
+      });
+    });
+  });
+
+  app.get('/unSetNotifications/:userId/:companyId', function(req, res) {
+    loggingSystem.addToLog("GET /unSetNotifications/" + req.params.userId + "/" + req.params.companyId);    
+    
+    loggingSystem.addToLog("/unSetNotifications: Opening database.");
+    db.open(function (error, client) {
+      var usersMongo = new mongodb.Collection(client, 'users');
+      
+      usersMongo.update({_id : new ObjectID(req.params.userId), "contests.companyId": { $in : [req.params.companyId]} }, {$set : {"contests.$.notification" : 0}}, function(err, object) {
+        if (error) throw error;
+        loggingSystem.addToLog("/unSetNotifications: Setting notifications to off.");
+        
+        res.send("OK");
+        loggingSystem.addToLog("/setNotifications: Closing database.");
+        db.close();
       });
     });
   });

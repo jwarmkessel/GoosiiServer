@@ -276,7 +276,7 @@ var usersModuleHandler = function(app, dbName) {
           //Now that I have the list of company objects I can pass it back and modify the order here 
           console.log("Sending client these company objects " + JSON.stringify(companyObj));
           userContestObj = {};
-          userContestObj.contests = companyObj;
+          userContestObj.results = companyObj;
           userContestObj.userObject = userObj;
           res.send(userContestObj);
           db.close();              
