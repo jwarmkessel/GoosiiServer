@@ -1,5 +1,3 @@
-var moment = require('moment');
-var time = require('time');
 
 var getCurrentUtcTimestamp = function() {
   var now = new Date;

@@ -1,9 +1,5 @@
 var usersModuleHandler = function(app, dbName) {
   console.log("including usersModule");
-  
-  var check = require('validator').check
-    ,sanitize = require('validator').sanitize
-    ,loggingSystem = require('./loggingSystem.js');
     
   //Native mongodb
   var mongodb = require('mongodb');
@@ -19,7 +15,7 @@ var usersModuleHandler = function(app, dbName) {
   
   app.get('/hi', function(req, res, next) {
     console.log("testing hi");
-    console.log(req.session.lastPage);
+    
     // Handle the get for this route
     db.open(function (error, client) {
       if(error) throw error;

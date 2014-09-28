@@ -7,12 +7,6 @@ var express = require('express')
     ,caCert = fs.readFileSync('aps_development.cer', encoding='ascii')
     ,options = { key: keyPem, cert: certPem, ca: [ caCert ] }
     ,http = require('http');
-
-var check = require('validator').check,
-  sanitize = require('validator').sanitize
-
-//Image and form uploads. I might be able to remove this since I have Gridform
-var formidable = require('formidable');
     
 //Native mongodb
 var mongodb = require('mongodb');

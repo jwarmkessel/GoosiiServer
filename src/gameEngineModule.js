@@ -28,9 +28,6 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
     options = { key: keyPem, cert: certPem, ca: [ caCert ] }
     apnsServer = "gateway.sandbox.push.apple.com";    
   }
-  
-  var check = require('validator').check
-    ,sanitize = require('validator').sanitize
     
   //Native mongodb
   var mongodb = require('mongodb');
@@ -40,9 +37,6 @@ var gameEngineModuleHandler = function(app, dbName, serverType, port) {
   var GridStore = require('mongodb').GridStore;
   var assert = require('assert');
   var Binary = require('mongodb').Binary;
-  
-  //include node-time
-  var time = require('time');
   
   //Include asynblock
   var asyncblock = require('asyncblock');

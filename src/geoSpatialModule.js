@@ -1,8 +1,5 @@
 var geoSpatialModuleHandler = function(app, dbName) {
 	console.log("geoSpatialmodule loaded");
-  var check = require('validator').check
-    ,sanitize = require('validator').sanitize
-    ,loggingSystem = require('./loggingSystem.js');  
     
   //Native mongodb
   var mongodb = require('mongodb');

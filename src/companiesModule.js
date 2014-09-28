@@ -1,8 +1,5 @@
 var companiesModuleHandler = function(app, dbName) {
   console.log("including companiesModule");
-  var check = require('validator').check
-    ,sanitize = require('validator').sanitize
-    ,loggingSystem = require('./loggingSystem.js'); // 11/05/2013 by MC
     
   //Native mongodb objects
   var mongodb = require('mongodb');
@@ -12,10 +9,7 @@ var companiesModuleHandler = function(app, dbName) {
   var GridStore = require('mongodb').GridStore;
   var assert = require('assert');
   var Binary = require('mongodb').Binary;
-  
-  //include node-time
-  var time = require('time');
-  
+    
   //Include asynblock
   var asyncblock = require('asyncblock');
   var exec = require('child_process').exec;

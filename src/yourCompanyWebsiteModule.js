@@ -1,10 +1,5 @@
 var yourCompanyWebsiteModuleHandler = function(app, dbName) {
   console.log("including companiesModule");
-
-/**************************************** module configuration */  
-  var check = require('validator').check
-    ,sanitize = require('validator').sanitize
-    ,loggingSystem = require('./loggingSystem.js'); 
     
   //Native mongodb objects
   var mongodb = require('mongodb');
@@ -14,9 +9,6 @@ var yourCompanyWebsiteModuleHandler = function(app, dbName) {
   var GridStore = require('mongodb').GridStore;
   var assert = require('assert');
   var Binary = require('mongodb').Binary;
-  
-  //include node-time
-  var time = require('time');
   
   //Include asynblock
   var asyncblock = require('asyncblock');
